@@ -10,7 +10,7 @@ A mod that allows you to view your search history.
 - [Kabslantivity](https://gdbrowser.com/u/17597362) - Initial idea for the mod
 - [at4pm](https://gdbrowser.com/u/27791517) - Additional ideas for the mod
 - [Krintop](https://gdbrowser.com/u/7242014) - Designer of the mod's button texture
-- [hiimjustin000](https://gdbrowser.com/u/7466002) - Creator of the mod
+- [hiimjasmine00](https://gdbrowser.com/u/7466002) - Creator of the mod
 
 ## Gallery
 ![Search History Popup ](./resources/search-history.png)

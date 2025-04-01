@@ -8,7 +8,7 @@
     "version": "v1.1.2",
     "id": "hiimjustin000.search_history",
     "name": "Search History",
-    "developer": "hiimjustin000",
+    "developer": "hiimjasmine00",
     "description": "A mod that allows you to view your search history.",
     "dependencies": {
         "geode.node-ids": ">=v1.9.0"
@@ -45,7 +45,7 @@
     },
     "links": {
         "community": "https://discord.gg/QVKmbvBXA7",
-        "source": "https://github.com/hiimjustin000/SearchHistory",
+        "source": "https://github.com/hiimjasmine00/SearchHistory",
         "homepage": "https://www.hiimjasmine00.com"
     },
     "tags": [
