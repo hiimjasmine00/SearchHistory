@@ -1,11 +1,13 @@
 #include "SearchHistoryNode.hpp"
 #include "SearchHistoryPopup.hpp"
+#include <Geode/loader/Mod.hpp>
+#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
-SearchHistoryPopup* SearchHistoryPopup::create(SearchHistoryCallback const& callback) {
+SearchHistoryPopup* SearchHistoryPopup::create(SearchHistoryCallback callback) {
     auto ret = new SearchHistoryPopup();
-    if (ret->initAnchored(440.0f, 290.0f, callback, "GJ_square02.png")) {
+    if (ret->initAnchored(440.0f, 290.0f, std::move(callback), "GJ_square02.png")) {
         ret->autorelease();
         return ret;
     }
@@ -13,10 +15,10 @@ SearchHistoryPopup* SearchHistoryPopup::create(SearchHistoryCallback const& call
     return nullptr;
 }
 
-bool SearchHistoryPopup::setup(SearchHistoryCallback const& callback) {
+bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
     setTitle("Search History", "bigFont.fnt", 0.53f);
 
-    m_searchCallback = callback;
+    m_searchCallback = std::move(callback);
 
     auto background = CCScale9Sprite::create("square02_001.png", { 0, 0, 80, 80 });
     background->setContentSize({ 400.0f, 195.0f });
@@ -81,11 +83,10 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback const& callback) {
 void SearchHistoryPopup::page(int p) {
     m_scrollLayer->m_contentLayer->removeAllChildren();
 
-    std::vector<SearchHistoryObject> history;
     auto query = string::toLower(m_searchInput->getString());
-    for (auto const& object : SearchHistory::get()) {
-        if (string::toLower(object.query).find(query) != std::string::npos) history.push_back(object);
-    }
+    auto history = ranges::filter(SearchHistory::get(), [&query](const SearchHistoryObject& object) {
+        return string::toLower(object.query).find(query) != std::string::npos;
+    });
 
     auto count = history.size();
     m_prevButton->setVisible(p > 0);
@@ -95,7 +96,7 @@ void SearchHistoryPopup::page(int p) {
     auto white = Mod::get()->getSettingValue<bool>("white-time");
     auto dark = Loader::get()->isModLoaded("bitz.darkmode_v4");
     for (int i = p * 10; i < (p + 1) * 10 && i < count; i++) {
-        m_scrollLayer->m_contentLayer->addChild(SearchHistoryNode::create(history[i], i, count, [this](SearchHistoryObject const& object) {
+        m_scrollLayer->m_contentLayer->addChild(SearchHistoryNode::create(history[i], i, count, [this](const SearchHistoryObject& object) {
             m_searchCallback(object);
             onClose(nullptr);
         }, [this](int index) {

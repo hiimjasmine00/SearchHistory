@@ -1,12 +1,15 @@
 #include "SearchHistoryNode.hpp"
+#include <Geode/binding/LevelTools.hpp>
+#include <Geode/ui/Popup.hpp>
+#include <Geode/utils/cocos.hpp>
 
 using namespace geode::prelude;
 
 SearchHistoryNode* SearchHistoryNode::create(
-    SearchHistoryObject const& object, int index, int count, SearchCallback const& search, RemoveCallback const& remove, bool h12, bool white, bool dark
+    const SearchHistoryObject& object, int index, int count, SearchCallback search, RemoveCallback remove, bool h12, bool white, bool dark
 ) {
     auto ret = new SearchHistoryNode();
-    if (ret->init(object, index, count, search, remove, h12, white, dark)) {
+    if (ret->init(object, index, count, std::move(search), std::move(remove), h12, white, dark)) {
         ret->autorelease();
         return ret;
     }
@@ -15,20 +18,21 @@ SearchHistoryNode* SearchHistoryNode::create(
 }
 
 bool SearchHistoryNode::init(
-    SearchHistoryObject const& object, int index, int count, SearchCallback const& search, RemoveCallback const& remove, bool h12, bool white, bool dark
+    const SearchHistoryObject& object, int index, int count, SearchCallback search, RemoveCallback remove, bool h12, bool white, bool dark
 ) {
     if (!CCNode::init()) return false;
 
     setContentSize({ 400.0f, 50.0f });
 
-    m_object = object;
-    m_searchCallback = search;
-    m_removeCallback = remove;
     m_index = index;
     m_count = count;
 
     auto background = CCScale9Sprite::create(
-        index % 10 == 0 ? "square-top.png"_spr : index % 10 == 9 || index == count - 1 ? "square-bottom.png"_spr : "square-middle.png"_spr, { 0, 0, 80, 80 });
+        index % 10 == 0 ? GEODE_MOD_ID "/square-top.png" :
+        index % 10 == 9 || index == count - 1 ? GEODE_MOD_ID "/square-bottom.png" :
+        GEODE_MOD_ID "/square-middle.png",
+        { 0, 0, 80, 80 }
+    );
     if (dark) background->setColor(index % 2 == 0 ? ccColor3B { 48, 48, 48 } : ccColor3B { 80, 80, 80 });
     else background->setColor(index % 2 == 0 ? ccColor3B { 161, 88, 44 } : ccColor3B { 194, 114, 62 });
     background->setContentSize({ 400.0f, 50.0f });
@@ -76,15 +80,18 @@ bool SearchHistoryNode::init(
     buttonMenu->setPosition({ 0.0f, 0.0f });
     addChild(buttonMenu);
 
-    auto removeButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.5f, [this](auto) {
-        createQuickPopup("Remove Search", "Are you sure you want to remove this search history entry?", "No", "Yes", [this](auto, bool btn2) {
-            if (btn2) m_removeCallback(m_index);
-        });
+    auto removeButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.5f, [this, remove = std::move(remove)](auto) {
+        createQuickPopup("Remove Search", "Are you sure you want to remove this search history entry?", "No", "Yes",
+            [this, remove = std::move(remove)](auto, bool btn2) {
+                if (btn2) remove(m_index);
+            });
     });
     removeButton->setPosition({ 380.0f, 25.0f });
     buttonMenu->addChild(removeButton);
 
-    auto searchButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_undoBtn_001.png", 0.6f, [this](auto) { m_searchCallback(m_object); });
+    auto searchButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_undoBtn_001.png", 0.6f, [this, object, search = std::move(search)](auto) {
+        search(object);
+    });
     searchButton->setPosition({ 350.0f, 25.0f });
     buttonMenu->addChild(searchButton);
 
@@ -99,13 +106,13 @@ bool SearchHistoryNode::init(
 
             if (object.uncompleted) filtersNode->addChild(CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png"));
             if (object.completed) filtersNode->addChild(CCSprite::createWithSpriteFrameName("GJ_completesIcon_001.png"));
-            if (object.featured) filtersNode->addChild(CCSprite::createWithSpriteFrameName("SH_featuredCoin_001.png"_spr));
-            if (object.original) filtersNode->addChild(CCSprite::createWithSpriteFrameName("SH_originalIcon_001.png"_spr));
-            if (object.twoPlayer) filtersNode->addChild(CCSprite::createWithSpriteFrameName("SH_twoPlayerBtn_001.png"_spr));
+            if (object.featured) filtersNode->addChild(CCSprite::createWithSpriteFrameName(GEODE_MOD_ID "/SH_featuredCoin_001.png"));
+            if (object.original) filtersNode->addChild(CCSprite::createWithSpriteFrameName(GEODE_MOD_ID "/SH_originalIcon_001.png"));
+            if (object.twoPlayer) filtersNode->addChild(CCSprite::createWithSpriteFrameName(GEODE_MOD_ID "/SH_twoPlayerBtn_001.png"));
             if (object.coins) filtersNode->addChild(CCSprite::createWithSpriteFrameName("GJ_coinsIcon2_001.png"));
-            if (object.epic) filtersNode->addChild(CCSprite::createWithSpriteFrameName("SH_epicCoin_001.png"_spr));
-            if (object.mythic) filtersNode->addChild(CCSprite::createWithSpriteFrameName("SH_epicCoin2_001.png"_spr));
-            if (object.legendary) filtersNode->addChild(CCSprite::createWithSpriteFrameName("SH_epicCoin3_001.png"_spr));
+            if (object.epic) filtersNode->addChild(CCSprite::createWithSpriteFrameName(GEODE_MOD_ID "/SH_epicCoin_001.png"));
+            if (object.mythic) filtersNode->addChild(CCSprite::createWithSpriteFrameName(GEODE_MOD_ID "/SH_epicCoin2_001.png"));
+            if (object.legendary) filtersNode->addChild(CCSprite::createWithSpriteFrameName(GEODE_MOD_ID "/SH_epicCoin3_001.png"));
             if (object.noStar) filtersNode->addChild(CCSprite::createWithSpriteFrameName("GJ_starsIcon_gray_001.png"));
 
             for (auto child : CCArrayExt<CCNode*>(filtersNode->getChildren())) {
@@ -152,17 +159,7 @@ bool SearchHistoryNode::init(
         }
 
         if (type < 1) for (auto time : object.lengths) {
-            auto length = "";
-            switch (time) {
-                case 0: length = "Tiny"; break;
-                case 1: length = "Short"; break;
-                case 2: length = "Medium"; break;
-                case 3: length = "Long"; break;
-                case 4: length = "XL"; break;
-                case 5: length = "Plat."; break;
-            }
-
-            auto lengthLabel = CCLabelBMFont::create(length, "bigFont.fnt");
+            auto lengthLabel = CCLabelBMFont::create(time < lengths.size() ? lengths[time] : "Unknown", "bigFont.fnt");
             lengthLabel->setScale(0.25f);
             difficultiesNode->addChild(lengthLabel);
         }

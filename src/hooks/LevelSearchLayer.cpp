@@ -1,13 +1,42 @@
-#include "SearchHistoryPopup.hpp"
+#include "../classes/SearchHistoryPopup.hpp"
+#include <Geode/binding/GameLevelManager.hpp>
+#include <Geode/modify/LevelSearchLayer.hpp>
+#include <Geode/ui/BasedButtonSprite.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/LevelSearchLayer.hpp>
 class $modify(SHLevelSearchLayer, LevelSearchLayer) {
+    static void onModify(ModifyBase<ModifyDerive<SHLevelSearchLayer, LevelSearchLayer>>& self) {
+        auto mod = Mod::get();
+        auto incognitoMode = mod->getSettingValue<bool>("incognito-mode");
+
+        auto onSearchHook = self.getHook("LevelSearchLayer::onSearch").map([incognitoMode](Hook* hook) {
+            return hook->setAutoEnable(incognitoMode), hook;
+        }).mapErr([](const std::string& err) {
+            return log::error("Failed to find LevelSearchLayer::onSearch hook: {}", err), err;
+        }).unwrapOr(nullptr);
+        auto onSearchUserHook = self.getHook("LevelSearchLayer::onSearchUser").map([incognitoMode](Hook* hook) {
+            return hook->setAutoEnable(incognitoMode), hook;
+        }).mapErr([](const std::string& err) {
+            return log::error("Failed to find LevelSearchLayer::onSearchUser hook: {}", err), err;
+        }).unwrapOr(nullptr);
+
+        listenForSettingChangesV3<bool>("incognito-mode", [onSearchHook, onSearchUserHook](bool value) {
+            if (onSearchHook) (void)(value ? onSearchHook->enable().mapErr([](const std::string& err) {
+                return log::error("Failed to enable LevelSearchLayer::onSearch hook: {}", err), err;
+            }) : onSearchHook->disable().mapErr([](const std::string& err) {
+                return log::error("Failed to disable LevelSearchLayer::onSearch hook: {}", err), err;
+            }));
+            if (onSearchUserHook) (void)(value ? onSearchUserHook->enable().mapErr([](const std::string& err) {
+                return log::error("Failed to enable LevelSearchLayer::onSearchUser hook: {}", err), err;
+            }) : onSearchUserHook->disable().mapErr([](const std::string& err) {
+                return log::error("Failed to disable LevelSearchLayer::onSearchUser hook: {}", err), err;
+            }));
+        }, mod);
+    }
+
     bool init(int type) {
         if (!LevelSearchLayer::init(type)) return false;
-
-        if (Mod::get()->getSettingValue<bool>("incognito-mode")) return true;
 
         auto historyButtonSprite = CircleButtonSprite::createWithSprite("SH_historyBtn_001.png"_spr);
         historyButtonSprite->getTopNode()->setScale(1.0f);
@@ -23,7 +52,7 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
     }
 
     void onHistory(CCObject* sender) {
-        SearchHistoryPopup::create([this](SearchHistoryObject const& object) {
+        SearchHistoryPopup::create([this](const SearchHistoryObject& object) {
             auto glm = GameLevelManager::get();
             if (object.type == 0) {
                 glm->setBoolForKey(object.uncompleted, "uncompleted_filter");
@@ -70,13 +99,11 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
 
     void onSearch(CCObject* sender) {
         LevelSearchLayer::onSearch(sender);
-        if (Mod::get()->getSettingValue<bool>("incognito-mode")) return;
         SearchHistory::add(getSearchObject(SearchType::Search, m_searchInput->getString()), time(0), m_type);
     }
 
     void onSearchUser(CCObject* sender) {
         LevelSearchLayer::onSearchUser(sender);
-        if (Mod::get()->getSettingValue<bool>("incognito-mode")) return;
         SearchHistory::add(getSearchObject(SearchType::Users, m_searchInput->getString()), time(0), 2);
     }
 };
