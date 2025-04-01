@@ -152,7 +152,7 @@ bool SearchHistoryNode::init(
             difficultiesNode->addChild(difficultySprite);
         }
 
-        if (std::find(object.difficulties.begin(), object.difficulties.end(), -2) != object.difficulties.end() && object.demonFilter > 0) {
+        if (std::ranges::find(object.difficulties, -2) != object.difficulties.end() && object.demonFilter > 0) {
             auto demonFilterSprite = CCSprite::createWithSpriteFrameName(fmt::format("diffIcon_{:02d}_btn_001.png", object.demonFilter).c_str());
             demonFilterSprite->setScale(0.25f);
             difficultiesNode->addChild(demonFilterSprite);

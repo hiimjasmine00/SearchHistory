@@ -79,7 +79,7 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
                         case 6: diff = -2; break;
                         case 7: diff = -3; break;
                     }
-                    toggleDifficultyNum(i, std::find(object.difficulties.begin(), object.difficulties.end(), diff) != object.difficulties.end());
+                    toggleDifficultyNum(i, std::ranges::find(object.difficulties, diff) != object.difficulties.end());
                     if (i != 6) continue;
 
                     auto demonToggled = m_difficultyDict->valueForKey(getDiffKey(i))->boolValue();
@@ -88,7 +88,7 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
                     if (auto dibFilter = getChildByIDRecursive("hiimjustin000.demons_in_between/quick-search-button")) dibFilter->setVisible(demonToggled);
                 }
                 if (object.type == 0) for (int i = 0; i < 6; i++) {
-                    toggleTimeNum(i, std::find(object.lengths.begin(), object.lengths.end(), i) != object.lengths.end());
+                    toggleTimeNum(i, std::ranges::find(object.lengths, i) != object.lengths.end());
                 }
                 demonFilterSelectClosed(object.demonFilter);
             }
