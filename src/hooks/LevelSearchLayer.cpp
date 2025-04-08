@@ -11,26 +11,26 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
         auto incognitoMode = mod->getSettingValue<bool>("incognito-mode");
 
         auto onSearchHook = self.getHook("LevelSearchLayer::onSearch").map([incognitoMode](Hook* hook) {
-            return hook->setAutoEnable(incognitoMode), hook;
+            return hook->setAutoEnable(!incognitoMode), hook;
         }).mapErr([](const std::string& err) {
             return log::error("Failed to find LevelSearchLayer::onSearch hook: {}", err), err;
         }).unwrapOr(nullptr);
         auto onSearchUserHook = self.getHook("LevelSearchLayer::onSearchUser").map([incognitoMode](Hook* hook) {
-            return hook->setAutoEnable(incognitoMode), hook;
+            return hook->setAutoEnable(!incognitoMode), hook;
         }).mapErr([](const std::string& err) {
             return log::error("Failed to find LevelSearchLayer::onSearchUser hook: {}", err), err;
         }).unwrapOr(nullptr);
 
         listenForSettingChangesV3<bool>("incognito-mode", [onSearchHook, onSearchUserHook](bool value) {
-            if (onSearchHook) (void)(value ? onSearchHook->enable().mapErr([](const std::string& err) {
-                return log::error("Failed to enable LevelSearchLayer::onSearch hook: {}", err), err;
-            }) : onSearchHook->disable().mapErr([](const std::string& err) {
+            if (onSearchHook) (void)(value ? onSearchHook->disable().mapErr([](const std::string& err) {
                 return log::error("Failed to disable LevelSearchLayer::onSearch hook: {}", err), err;
+            }) : onSearchHook->enable().mapErr([](const std::string& err) {
+                return log::error("Failed to enable LevelSearchLayer::onSearch hook: {}", err), err;
             }));
-            if (onSearchUserHook) (void)(value ? onSearchUserHook->enable().mapErr([](const std::string& err) {
-                return log::error("Failed to enable LevelSearchLayer::onSearchUser hook: {}", err), err;
-            }) : onSearchUserHook->disable().mapErr([](const std::string& err) {
+            if (onSearchUserHook) (void)(value ? onSearchUserHook->disable().mapErr([](const std::string& err) {
                 return log::error("Failed to disable LevelSearchLayer::onSearchUser hook: {}", err), err;
+            }) : onSearchUserHook->enable().mapErr([](const std::string& err) {
+                return log::error("Failed to enable LevelSearchLayer::onSearchUser hook: {}", err), err;
             }));
         }, mod);
     }
@@ -53,43 +53,44 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
 
     void onHistory(CCObject* sender) {
         SearchHistoryPopup::create([this](const SearchHistoryObject& object) {
-            auto glm = GameLevelManager::get();
+            auto searchFilters = GameLevelManager::get()->m_searchFilters;
+
             if (object.type == 0) {
-                glm->setBoolForKey(object.uncompleted, "uncompleted_filter");
-                glm->setBoolForKey(object.completed, "completed_filter");
-                glm->setBoolForKey(object.original, "original_filter");
-                glm->setBoolForKey(object.coins, "coin_filter");
-                glm->setBoolForKey(object.twoPlayer, "twoP_filter");
-                glm->setBoolForKey(object.song, "enable_songFilter");
-                glm->setBoolForKey(object.noStar, "nostar_filter");
-                glm->setBoolForKey(object.featured, "featured_filter");
-                glm->setBoolForKey(object.epic, "epic_filter");
-                glm->setBoolForKey(object.mythic, "legendary_filter"); // Mythic and legendary are swapped, nice job RobTop
-                glm->setBoolForKey(object.legendary, "mythic_filter");
-                glm->setBoolForKey(object.customSong, "customsong_filter");
-                glm->setIntForKey(object.songID, "song_filter");
+                searchFilters->setObject(CCString::create(object.uncompleted ? "1" : "0"), "uncompleted_filter");
+                searchFilters->setObject(CCString::create(object.completed ? "1" : "0"), "completed_filter");
+                searchFilters->setObject(CCString::create(object.original ? "1" : "0"), "original_filter");
+                searchFilters->setObject(CCString::create(object.coins ? "1" : "0"), "coin_filter");
+                searchFilters->setObject(CCString::create(object.twoPlayer ? "1" : "0"), "twoP_filter");
+                searchFilters->setObject(CCString::create(object.song ? "1" : "0"), "enable_songFilter");
+                searchFilters->setObject(CCString::create(object.noStar ? "1" : "0"), "nostar_filter");
+                searchFilters->setObject(CCString::create(object.featured ? "1" : "0"), "featured_filter");
+                searchFilters->setObject(CCString::create(object.epic ? "1" : "0"), "epic_filter");
+                searchFilters->setObject(CCString::create(object.mythic ? "1" : "0"), "legendary_filter"); // Nice job RobTop
+                searchFilters->setObject(CCString::create(object.legendary ? "1" : "0"), "mythic_filter"); // Nice job RobTop
+                searchFilters->setObject(CCString::create(object.customSong ? "1" : "0"), "customsong_filter");
+                searchFilters->setObject(CCString::create(std::to_string(object.songID)), "song_filter");
             }
 
             if (object.type == 0 || object.type == 1) {
-                if (glm->getBoolForKey("star_filter") != object.star) toggleStar(nullptr);
+                if (searchFilters->valueForKey("star_filter")->boolValue() != object.star) toggleStar(nullptr);
+
                 for (int i = 0; i < 8; i++) {
-                    auto diff = i;
-                    switch (i) {
-                        case 0: diff = -1; break;
-                        case 6: diff = -2; break;
-                        case 7: diff = -3; break;
-                    }
-                    toggleDifficultyNum(i, std::ranges::find(object.difficulties, diff) != object.difficulties.end());
+                    toggleDifficultyNum(i, std::ranges::find(object.difficulties,
+                        i == 0 ? -1 : i == 6 ? -2 : i == 7 ? -3 : i) != object.difficulties.end());
+
                     if (i != 6) continue;
 
-                    auto demonToggled = m_difficultyDict->valueForKey(getDiffKey(i))->boolValue();
+                    auto demonToggled = m_difficultyDict->valueForKey("D6")->boolValue();
                     m_demonTypeButton->setEnabled(demonToggled);
                     m_demonTypeButton->setVisible(demonToggled);
-                    if (auto dibFilter = getChildByIDRecursive("hiimjustin000.demons_in_between/quick-search-button")) dibFilter->setVisible(demonToggled);
+                    if (auto dibFilter = getChildByIDRecursive("hiimjustin000.demons_in_between/quick-search-button"))
+                        dibFilter->setVisible(demonToggled);
                 }
+
                 if (object.type == 0) for (int i = 0; i < 6; i++) {
                     toggleTimeNum(i, std::ranges::find(object.lengths, i) != object.lengths.end());
                 }
+
                 demonFilterSelectClosed(object.demonFilter);
             }
 

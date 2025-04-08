@@ -16,7 +16,13 @@ SearchHistoryPopup* SearchHistoryPopup::create(SearchHistoryCallback callback) {
 }
 
 bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
+    setID("SearchHistoryPopup");
     setTitle("Search History", "bigFont.fnt", 0.53f);
+    m_title->setID("search-history-title");
+    m_mainLayer->setID("main-layer");
+    m_buttonMenu->setID("button-menu");
+    m_bgSprite->setID("background");
+    m_closeBtn->setID("close-button");
 
     m_searchCallback = std::move(callback);
 
@@ -24,6 +30,7 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
     background->setContentSize({ 400.0f, 195.0f });
     background->setPosition({ 220.0f, 117.5f });
     background->setOpacity(127);
+    background->setID("scroll-background");
     m_mainLayer->addChild(background);
 
     m_scrollLayer = ScrollLayer::create({ 400.0f, 195.0f });
@@ -35,12 +42,14 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
             ->setAutoGrowAxis(195.0f)
             ->setGap(0.0f)
     );
+    m_scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(m_scrollLayer);
 
     m_prevButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_arrow_01_001.png", 1.0f, [this](auto) {
         page(m_page - 1);
     });
     m_prevButton->setPosition({ -34.5f, 145.0f });
+    m_prevButton->setID("prev-button");
     m_buttonMenu->addChild(m_prevButton);
 
     auto nextButtonSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
@@ -49,6 +58,7 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
         page(m_page + 1);
     });
     m_nextButton->setPosition({ 474.5f, 145.0f });
+    m_nextButton->setID("next-button");
     m_buttonMenu->addChild(m_nextButton);
 
     auto clearButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.6f, [this](auto) {
@@ -60,12 +70,14 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
         });
     });
     clearButton->setPosition({ 420.0f, 270.0f });
+    clearButton->setID("clear-button");
     m_buttonMenu->addChild(clearButton);
 
     m_countLabel = CCLabelBMFont::create("", "goldFont.fnt");
     m_countLabel->setAnchorPoint({ 1.0f, 0.0f });
     m_countLabel->setScale(0.5f);
     m_countLabel->setPosition({ 435.0f, 7.0f });
+    m_countLabel->setID("count-label");
     m_mainLayer->addChild(m_countLabel);
 
     m_searchInput = TextInput::create(400.0f, "Search History...");
@@ -73,6 +85,7 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
     m_searchInput->setTextAlign(TextInputAlign::Left);
     m_searchInput->setPosition({ 220.0f, 235.0f });
     m_searchInput->setCallback([this](auto) { page(0); });
+    m_searchInput->setID("search-input");
     m_mainLayer->addChild(m_searchInput);
 
     page(0);
@@ -92,8 +105,9 @@ void SearchHistoryPopup::page(int p) {
     m_prevButton->setVisible(p > 0);
     m_nextButton->setVisible(p < (count > 0 ? (count - 1) / 10 : 0));
 
-    auto h12 = Mod::get()->getSettingValue<bool>("12-hour-time");
-    auto white = Mod::get()->getSettingValue<bool>("white-time");
+    auto mod = Mod::get();
+    auto h12 = mod->getSettingValue<bool>("12-hour-time");
+    auto white = mod->getSettingValue<bool>("white-time");
     auto dark = Loader::get()->isModLoaded("bitz.darkmode_v4");
     for (int i = p * 10; i < (p + 1) * 10 && i < count; i++) {
         m_scrollLayer->m_contentLayer->addChild(SearchHistoryNode::create(history[i], i, count, [this](const SearchHistoryObject& object) {

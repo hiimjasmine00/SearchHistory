@@ -6,7 +6,8 @@
 using namespace geode::prelude;
 
 void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
-    auto history = Mod::get()->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
+    auto mod = Mod::get();
+    auto history = mod->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
 
     auto difficulties = ranges::reduce<std::vector<int>>(
         search->m_difficulty != "-" ? string::split(search->m_difficulty, ",") : std::vector<std::string>(),
@@ -43,13 +44,12 @@ void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
         .star = search->m_starFilter
     };
 
-    auto found = std::ranges::find_if(history, [&obj](const SearchHistoryObject& o) { return obj == o; });
-
-    if (found != history.end()) history.erase(found);
+    if (auto found = std::ranges::find_if(history, [&obj](const SearchHistoryObject& o) { return obj == o; }); found != history.end())
+        history.erase(found);
 
     history.insert(history.begin(), obj);
 
-    Mod::get()->setSavedValue("search-history", history);
+    mod->setSavedValue("search-history", history);
 }
 
 void SearchHistory::clear() {
@@ -61,9 +61,10 @@ std::vector<SearchHistoryObject> SearchHistory::get() {
 }
 
 void SearchHistory::remove(int index) {
-    auto history = Mod::get()->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
+    auto mod = Mod::get();
+    auto history = mod->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
     history.erase(history.begin() + index);
-    Mod::get()->setSavedValue("search-history", history);
+    mod->setSavedValue("search-history", history);
 }
 
 Result<std::vector<SearchHistoryObject>> matjson::Serialize<std::vector<SearchHistoryObject>>::fromJson(const matjson::Value& value) {
@@ -105,6 +106,7 @@ Result<std::vector<SearchHistoryObject>> matjson::Serialize<std::vector<SearchHi
 matjson::Value matjson::Serialize<std::vector<SearchHistoryObject>>::toJson(const std::vector<SearchHistoryObject>& vec) {
     return ranges::map<std::vector<matjson::Value>>(vec, [](const SearchHistoryObject& obj) {
         matjson::Value historyObject;
+
         historyObject["time"] = obj.time;
         historyObject["type"] = obj.type;
         if (!obj.query.empty()) historyObject["query"] = obj.query;

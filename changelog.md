@@ -1,4 +1,9 @@
 # Search History Changelog
+## v1.1.3 (2025-04-08)
+- Added support for iOS
+- Fixed a bug where incognito mode would act in reverse
+_ Added node IDs to the search history popup and entries
+
 ## v1.1.2 (2025-04-01)
 - Internal code changes (April Fools' Day)
 

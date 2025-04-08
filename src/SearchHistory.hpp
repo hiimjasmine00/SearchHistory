@@ -1,5 +1,4 @@
 #pragma once
-
 #include <Geode/GeneratedPredeclare.hpp>
 #include <matjson.hpp>
 
