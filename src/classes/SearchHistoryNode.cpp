@@ -249,7 +249,7 @@ bool SearchHistoryNode::init(
             addChild(songSprite);
 
             auto songLabel = CCLabelBMFont::create(
-                (object.customSong ? std::to_string(object.songID) : LevelTools::getAudioTitle(object.songID - 1)).c_str(), "bigFont.fnt");
+                object.customSong ? std::to_string(object.songID).c_str() : LevelTools::getAudioTitle(object.songID - 1).c_str(), "bigFont.fnt");
             songLabel->setScale(0.25f);
             songLabel->setAnchorPoint({ 0.0f, 0.5f });
             songLabel->setPosition({ 60.0f, 7.0f });
