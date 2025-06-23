@@ -1,5 +1,5 @@
 # Search History
-A mod that allows you to view your search history.
+Save and view your recent searches.
 
 ## Features
 - A button in the level search menu that allows you to view your search history

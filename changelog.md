@@ -1,4 +1,7 @@
 # Search History Changelog
+## v1.1.4 (2025-06-23)
+- Ported to Geode v4.6.1
+
 ## v1.1.3 (2025-04-08)
 - Added support for iOS
 - Fixed a bug where incognito mode would act in reverse
