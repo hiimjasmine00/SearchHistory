@@ -91,33 +91,21 @@ bool SearchHistoryObject::empty() const {
 
 void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
     std::vector<int> difficulties;
-    std::string_view difficulty = search->m_difficulty;
-    if (difficulty != "-") {
-        auto start = difficulty.begin();
-        auto end = difficulty.end();
-        for (auto it = start; it <= end; ++it) {
-            if (it >= end || *it == ',') {
-                int num;
-                if (auto res = std::from_chars(start, it, num); res.ec == std::errc()) {
-                    difficulties.push_back(num);
-                }
-                start = it + 1;
+    if (search->m_difficulty != "-") {
+        for (auto& diff : string::split(search->m_difficulty, ",")) {
+            int num;
+            if (auto res = std::from_chars(diff.data(), diff.data() + diff.size(), num); res.ec == std::errc()) {
+                difficulties.push_back(num);
             }
         }
     }
 
     std::vector<int> lengths;
-    std::string_view length = search->m_length;
-    if (length != "-") {
-        auto start = length.begin();
-        auto end = length.end();
-        for (auto it = start; it <= end; ++it) {
-            if (it >= end || *it == ',') {
-                int num;
-                if (auto res = std::from_chars(start, it, num); res.ec == std::errc()) {
-                    lengths.push_back(num);
-                }
-                start = it + 1;
+    if (search->m_length != "-") {
+        for (auto& len : string::split(search->m_length, ",")) {
+            int num;
+            if (auto res = std::from_chars(len.data(), len.data() + len.size(), num); res.ec == std::errc()) {
+                lengths.push_back(num);
             }
         }
     }
@@ -126,8 +114,8 @@ void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
     obj.time = time;
     obj.type = type;
     obj.query = search->m_searchQuery;
-    obj.difficulties = difficulties;
-    obj.lengths = lengths;
+    obj.difficulties = std::move(difficulties);
+    obj.lengths = std::move(lengths);
     obj.uncompleted = search->m_uncompletedFilter;
     obj.completed = search->m_completedFilter;
     obj.featured = search->m_featuredFilter;
