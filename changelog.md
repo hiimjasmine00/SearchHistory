@@ -1,4 +1,7 @@
 # Search History Changelog
+## v1.2.0 (2025-10-26)
+- Added advanced filtering options
+
 ## v1.1.4 (2025-06-23)
 - Ported to Geode v4.6.1
 

@@ -1,12 +1,12 @@
 {
-    "geode": "4.6.1",
+    "geode": "4.9.0",
     "gd": {
         "android": "2.2074",
         "win": "2.2074",
         "mac": "2.2074",
         "ios": "2.2074"
     },
-    "version": "v1.1.4",
+    "version": "v1.2.0",
     "id": "hiimjustin000.search_history",
     "name": "Search History",
     "developer": "hiimjasmine00",

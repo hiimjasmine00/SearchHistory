@@ -3,7 +3,7 @@ Save and view your recent searches.
 
 ## Features
 - A button in the level search menu that allows you to view your search history
-- A popup that shows your search history, including a filter text box, and entries that can be used to search again
+- A popup that shows your search history, including advanced filter options, and entries that can be used to search again
 - Incognito mode, which allows you to search without saving to your search history
 
 ## Credits
@@ -13,7 +13,7 @@ Save and view your recent searches.
 - [hiimjasmine00](https://gdbrowser.com/u/7466002) - Creator of the mod
 
 ## Gallery
-![Search History Popup ](./resources/search-history.png)
+![Search History Popup](https://raw.githubusercontent.com/hiimjasmine00/SearchHistory/refs/heads/master/resources/search-history.png)
 
-# License
-This mod is licensed under the [MIT License](./LICENSE).
+## License
+This mod is licensed under the [MIT License](https://github.com/hiimjasmine00/SearchHistory/blob/master/LICENSE).

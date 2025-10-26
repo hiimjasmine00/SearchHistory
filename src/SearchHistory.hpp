@@ -3,60 +3,44 @@
 #include <matjson.hpp>
 
 struct SearchHistoryObject {
-    int64_t time;
-    int type;
+    int64_t time = 0;
+    int type = 0;
+    int index = 0;
     std::string query;
     std::vector<int> difficulties;
     std::vector<int> lengths;
-    bool uncompleted;
-    bool completed;
-    bool featured;
-    bool original;
-    bool twoPlayer;
-    bool coins;
-    bool epic;
-    bool legendary;
-    bool mythic;
-    bool song;
-    bool customSong;
-    int songID;
-    int demonFilter;
-    bool noStar;
-    bool star;
+    bool uncompleted = false;
+    bool completed = false;
+    bool featured = false;
+    bool original = false;
+    bool twoPlayer = false;
+    bool coins = false;
+    bool epic = false;
+    bool legendary = false;
+    bool mythic = false;
+    bool song = false;
+    bool customSong = false;
+    int songID = 0;
+    int demonFilter = 0;
+    bool noStar = false;
+    bool star = false;
 
-    bool operator==(const SearchHistoryObject& other) const {
-        return floor(time / 86400.0) == floor(other.time / 86400.0) &&
-            type == other.type &&
-            query == other.query &&
-            difficulties == other.difficulties &&
-            lengths == other.lengths &&
-            uncompleted == other.uncompleted &&
-            completed == other.completed &&
-            featured == other.featured &&
-            original == other.original &&
-            twoPlayer == other.twoPlayer &&
-            coins == other.coins &&
-            epic == other.epic &&
-            legendary == other.legendary &&
-            mythic == other.mythic &&
-            song == other.song &&
-            (!song || (customSong == other.customSong && songID == other.songID)) &&
-            demonFilter == other.demonFilter &&
-            noStar == other.noStar &&
-            star == other.star;
-    }
+    bool operator==(const SearchHistoryObject& other) const;
+    bool contains(const SearchHistoryObject& other) const;
+    bool empty() const;
 };
 
 class SearchHistory {
 public:
+    static std::vector<SearchHistoryObject> history;
+
     static void add(GJSearchObject*, time_t, int);
-    static void clear();
-    static std::vector<SearchHistoryObject> get();
     static void remove(int);
+    static void update();
 };
 
 template<>
-struct matjson::Serialize<std::vector<SearchHistoryObject>> {
-    static geode::Result<std::vector<SearchHistoryObject>> fromJson(const matjson::Value&);
-    static matjson::Value toJson(const std::vector<SearchHistoryObject>&);
+struct matjson::Serialize<SearchHistoryObject> {
+    static geode::Result<SearchHistoryObject> fromJson(const matjson::Value&);
+    static matjson::Value toJson(const SearchHistoryObject&);
 };

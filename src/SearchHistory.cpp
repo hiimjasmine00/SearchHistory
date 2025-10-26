@@ -1,135 +1,226 @@
 #include "SearchHistory.hpp"
 #include <Geode/binding/GJSearchObject.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
+std::vector<SearchHistoryObject> SearchHistory::history;
+
+$on_mod(Loaded) {
+    for (auto& object : Mod::get()->getSavedValue<std::vector<SearchHistoryObject>>("search-history")) {
+        if (!std::ranges::contains(SearchHistory::history, object)) {
+            SearchHistory::history.push_back(std::move(object));
+        }
+    }
+    SearchHistory::update();
+}
+
+$on_mod(DataSaved) {
+    Mod::get()->setSavedValue("search-history", SearchHistory::history);
+}
+
+bool SearchHistoryObject::operator==(const SearchHistoryObject& other) const {
+    return (time - time % 86400) == (other.time - other.time % 86400) &&
+        type == other.type &&
+        query == other.query &&
+        difficulties == other.difficulties &&
+        lengths == other.lengths &&
+        uncompleted == other.uncompleted &&
+        completed == other.completed &&
+        featured == other.featured &&
+        original == other.original &&
+        twoPlayer == other.twoPlayer &&
+        coins == other.coins &&
+        epic == other.epic &&
+        legendary == other.legendary &&
+        mythic == other.mythic &&
+        song == other.song &&
+        (!song || (customSong == other.customSong && songID == other.songID)) &&
+        demonFilter == other.demonFilter &&
+        noStar == other.noStar &&
+        star == other.star;
+}
+
+bool SearchHistoryObject::contains(const SearchHistoryObject& other) const {
+    if (other.type > -1 && type != other.type) return false;
+    if (!other.query.empty() && !string::toLower(query).contains(string::toLower(other.query))) return false;
+    for (auto diff : other.difficulties) {
+        if (!std::ranges::contains(difficulties, diff)) return false;
+    }
+    for (auto len : other.lengths) {
+        if (!std::ranges::contains(lengths, len)) return false;
+    }
+    if (other.uncompleted && !uncompleted) return false;
+    if (other.completed && !completed) return false;
+    if (other.featured && !featured) return false;
+    if (other.original && !original) return false;
+    if (other.twoPlayer && !twoPlayer) return false;
+    if (other.coins && !coins) return false;
+    if (other.epic && !epic) return false;
+    if (other.legendary && !legendary) return false;
+    if (other.mythic && !mythic) return false;
+    if (other.song) {
+        if (!song) return false;
+        if (customSong != other.customSong) return false;
+        if (other.songID > 0 && songID != other.songID) return false;
+    }
+    if (other.demonFilter > 0 && demonFilter != other.demonFilter) return false;
+    if (other.noStar && !noStar) return false;
+    if (other.star && !star) return false;
+    return true;
+}
+
+bool SearchHistoryObject::empty() const {
+    return type < 0 &&
+        query.empty() &&
+        difficulties.empty() &&
+        lengths.empty() &&
+        !uncompleted &&
+        !completed &&
+        !featured &&
+        !original &&
+        !twoPlayer &&
+        !coins &&
+        !epic &&
+        !legendary &&
+        !mythic &&
+        !song &&
+        !noStar &&
+        !star;
+}
+
 void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
-    auto mod = Mod::get();
-    auto history = mod->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
+    std::vector<int> difficulties;
+    std::string_view difficulty = search->m_difficulty;
+    if (difficulty != "-") {
+        auto start = difficulty.begin();
+        auto end = difficulty.end();
+        for (auto it = start; it <= end; ++it) {
+            if (it >= end || *it == ',') {
+                int num;
+                if (auto res = std::from_chars(start, it, num); res.ec == std::errc()) {
+                    difficulties.push_back(num);
+                }
+                start = it + 1;
+            }
+        }
+    }
 
-    auto difficulties = ranges::reduce<std::vector<int>>(
-        search->m_difficulty != "-" ? string::split(search->m_difficulty, ",") : std::vector<std::string>(),
-        [](std::vector<int>& vec, const std::string& str) {
-            if (auto num = numFromString<int>(str)) vec.push_back(num.unwrap());
-        });
+    std::vector<int> lengths;
+    std::string_view length = search->m_length;
+    if (length != "-") {
+        auto start = length.begin();
+        auto end = length.end();
+        for (auto it = start; it <= end; ++it) {
+            if (it >= end || *it == ',') {
+                int num;
+                if (auto res = std::from_chars(start, it, num); res.ec == std::errc()) {
+                    lengths.push_back(num);
+                }
+                start = it + 1;
+            }
+        }
+    }
 
-    auto lengths = ranges::reduce<std::vector<int>>(
-        search->m_length != "-" ? string::split(search->m_length, ",") : std::vector<std::string>(),
-        [](std::vector<int>& vec, const std::string& str) {
-            if (auto num = numFromString<int>(str)) vec.push_back(num.unwrap());
-        });
+    SearchHistoryObject obj;
+    obj.time = time;
+    obj.type = type;
+    obj.query = search->m_searchQuery;
+    obj.difficulties = difficulties;
+    obj.lengths = lengths;
+    obj.uncompleted = search->m_uncompletedFilter;
+    obj.completed = search->m_completedFilter;
+    obj.featured = search->m_featuredFilter;
+    obj.original = search->m_originalFilter;
+    obj.twoPlayer = search->m_twoPlayerFilter;
+    obj.coins = search->m_coinsFilter;
+    obj.epic = search->m_epicFilter;
+    obj.legendary = search->m_legendaryFilter;
+    obj.mythic = search->m_mythicFilter;
+    obj.song = search->m_songFilter;
+    obj.customSong = search->m_customSongFilter;
+    obj.songID = search->m_songID;
+    obj.demonFilter = (int)search->m_demonFilter;
+    obj.noStar = search->m_noStarFilter;
+    obj.star = search->m_starFilter;
 
-    SearchHistoryObject obj = {
-        .time = time,
-        .type = type,
-        .query = search->m_searchQuery,
-        .difficulties = difficulties,
-        .lengths = lengths,
-        .uncompleted = search->m_uncompletedFilter,
-        .completed = search->m_completedFilter,
-        .featured = search->m_featuredFilter,
-        .original = search->m_originalFilter,
-        .twoPlayer = search->m_twoPlayerFilter,
-        .coins = search->m_coinsFilter,
-        .epic = search->m_epicFilter,
-        .legendary = search->m_legendaryFilter,
-        .mythic = search->m_mythicFilter,
-        .song = search->m_songFilter,
-        .customSong = search->m_customSongFilter,
-        .songID = search->m_songID,
-        .demonFilter = (int)search->m_demonFilter,
-        .noStar = search->m_noStarFilter,
-        .star = search->m_starFilter
-    };
-
-    if (auto found = std::ranges::find_if(history, [&obj](const SearchHistoryObject& o) { return obj == o; }); found != history.end())
+    auto found = std::ranges::find_if(history, [&obj](const SearchHistoryObject& o) {
+        return obj == o;
+    });
+    if (found != history.end()) {
         history.erase(found);
+    }
 
-    history.insert(history.begin(), obj);
-
-    mod->setSavedValue("search-history", history);
-}
-
-void SearchHistory::clear() {
-    Mod::get()->setSavedValue<std::vector<SearchHistoryObject>>("search-history", {});
-}
-
-std::vector<SearchHistoryObject> SearchHistory::get() {
-    return Mod::get()->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
+    history.insert(history.begin(), std::move(obj));
+    update();
 }
 
 void SearchHistory::remove(int index) {
-    auto mod = Mod::get();
-    auto history = mod->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
-    history.erase(history.begin() + index);
-    mod->setSavedValue("search-history", history);
+    auto it = history.begin() + index;
+    if (it < history.end()) {
+        history.erase(it);
+        update();
+    }
 }
 
-Result<std::vector<SearchHistoryObject>> matjson::Serialize<std::vector<SearchHistoryObject>>::fromJson(const matjson::Value& value) {
-    if (!value.isArray()) return Err("Expected array");
-
-    return Ok(ranges::reduce<std::vector<SearchHistoryObject>>(value.asArray().unwrap(),
-        [](std::vector<SearchHistoryObject>& vec, const matjson::Value& elem) {
-            SearchHistoryObject obj = {
-                .time = (int64_t)elem["time"].asInt().unwrapOr(0),
-                .type = (int)elem["type"].asInt().unwrapOr(0),
-                .query = elem["query"].asString().unwrapOr(""),
-                .difficulties = ranges::map<std::vector<int>>(
-                    elem["difficulties"].isArray() ? elem["difficulties"].asArray().unwrap() : std::vector<matjson::Value>(),
-                    [](const matjson::Value& e) { return e.asInt().unwrapOr(0); }),
-                .lengths = ranges::map<std::vector<int>>(
-                    elem["lengths"].isArray() ? elem["lengths"].asArray().unwrap() : std::vector<matjson::Value>(),
-                    [](const matjson::Value& e) { return e.asInt().unwrapOr(0); }),
-                .uncompleted = elem["uncompleted"].asBool().unwrapOr(false),
-                .completed = elem["completed"].asBool().unwrapOr(false),
-                .featured = elem["featured"].asBool().unwrapOr(false),
-                .original = elem["original"].asBool().unwrapOr(false),
-                .twoPlayer = elem["two-player"].asBool().unwrapOr(false),
-                .coins = elem["coins"].asBool().unwrapOr(false),
-                .epic = elem["epic"].asBool().unwrapOr(false),
-                .legendary = elem["legendary"].asBool().unwrapOr(false),
-                .mythic = elem["mythic"].asBool().unwrapOr(false),
-                .song = elem["song"].asBool().unwrapOr(false),
-                .customSong = elem["custom-song"].asBool().unwrapOr(false),
-                .songID = (int)elem["song-id"].asInt().unwrapOr(0),
-                .demonFilter = (int)elem["demon-filter"].asInt().unwrapOr(0),
-                .noStar = elem["no-star"].asBool().unwrapOr(false),
-                .star = elem["star"].asBool().unwrapOr(false)
-            };
-
-            if (!std::ranges::any_of(vec, [&obj](const SearchHistoryObject& o) { return obj == o; })) vec.push_back(obj);
-        }));
+void SearchHistory::update() {
+    for (auto it = history.begin(); it != history.end(); ++it) {
+        it->index = it - history.begin();
+    }
 }
 
-matjson::Value matjson::Serialize<std::vector<SearchHistoryObject>>::toJson(const std::vector<SearchHistoryObject>& vec) {
-    return ranges::map<std::vector<matjson::Value>>(vec, [](const SearchHistoryObject& obj) {
-        matjson::Value historyObject;
+Result<SearchHistoryObject> matjson::Serialize<SearchHistoryObject>::fromJson(const matjson::Value& value) {
+    if (!value.isObject()) return Err("Expected object");
 
-        historyObject["time"] = obj.time;
-        historyObject["type"] = obj.type;
-        if (!obj.query.empty()) historyObject["query"] = obj.query;
-        if (!obj.difficulties.empty()) historyObject["difficulties"] = obj.difficulties;
-        if (!obj.lengths.empty()) historyObject["lengths"] = obj.lengths;
-        if (obj.uncompleted) historyObject["uncompleted"] = obj.uncompleted;
-        if (obj.completed) historyObject["completed"] = obj.completed;
-        if (obj.featured) historyObject["featured"] = obj.featured;
-        if (obj.original) historyObject["original"] = obj.original;
-        if (obj.twoPlayer) historyObject["two-player"] = obj.twoPlayer;
-        if (obj.coins) historyObject["coins"] = obj.coins;
-        if (obj.epic) historyObject["epic"] = obj.epic;
-        if (obj.legendary) historyObject["legendary"] = obj.legendary;
-        if (obj.mythic) historyObject["mythic"] = obj.mythic;
-        if (obj.song) {
-            historyObject["song"] = obj.song;
-            if (obj.customSong) historyObject["custom-song"] = obj.customSong;
-            historyObject["song-id"] = obj.songID;
-        }
-        if (obj.demonFilter != 0) historyObject["demon-filter"] = obj.demonFilter;
-        if (obj.noStar) historyObject["no-star"] = obj.noStar;
-        if (obj.star) historyObject["star"] = obj.star;
+    SearchHistoryObject obj;
+    if (auto time = value.get<int64_t>("time").ok()) obj.time = *time;
+    if (auto type = value.get<int>("type").ok()) obj.type = *type;
+    if (auto query = value.get<std::string>("query").ok()) obj.query = *std::move(query);
+    if (auto difficulties = value.get<std::vector<int>>("difficulties").ok()) obj.difficulties = *std::move(difficulties);
+    if (auto lengths = value.get<std::vector<int>>("lengths").ok()) obj.lengths = *std::move(lengths);
+    if (auto uncompleted = value.get<bool>("uncompleted").ok()) obj.uncompleted = *uncompleted;
+    if (auto completed = value.get<bool>("completed").ok()) obj.completed = *completed;
+    if (auto featured = value.get<bool>("featured").ok()) obj.featured = *featured;
+    if (auto original = value.get<bool>("original").ok()) obj.original = *original;
+    if (auto twoPlayer = value.get<bool>("two-player").ok()) obj.twoPlayer = *twoPlayer;
+    if (auto coins = value.get<bool>("coins").ok()) obj.coins = *coins;
+    if (auto epic = value.get<bool>("epic").ok()) obj.epic = *epic;
+    if (auto legendary = value.get<bool>("legendary").ok()) obj.legendary = *legendary;
+    if (auto mythic = value.get<bool>("mythic").ok()) obj.mythic = *mythic;
+    if (auto song = value.get<bool>("song").ok()) obj.song = *song;
+    if (auto customSong = value.get<bool>("custom-song").ok()) obj.customSong = *customSong;
+    if (auto songID = value.get<int>("song-id").ok()) obj.songID = *songID;
+    if (auto demonFilter = value.get<int>("demon-filter").ok()) obj.demonFilter = *demonFilter;
+    if (auto noStar = value.get<bool>("no-star").ok()) obj.noStar = *noStar;
+    if (auto star = value.get<bool>("star").ok()) obj.star = *star;
+    return Ok(std::move(obj));
+}
 
-        return historyObject;
-    });
+matjson::Value matjson::Serialize<SearchHistoryObject>::toJson(const SearchHistoryObject& obj) {
+    matjson::Value historyObject;
+
+    historyObject.set("time", obj.time);
+    historyObject.set("type", obj.type);
+    if (!obj.query.empty()) historyObject.set("query", obj.query);
+    if (!obj.difficulties.empty()) historyObject.set("difficulties", obj.difficulties);
+    if (!obj.lengths.empty()) historyObject.set("lengths", obj.lengths);
+    if (obj.uncompleted) historyObject.set("uncompleted", obj.uncompleted);
+    if (obj.completed) historyObject.set("completed", obj.completed);
+    if (obj.featured) historyObject.set("featured", obj.featured);
+    if (obj.original) historyObject.set("original", obj.original);
+    if (obj.twoPlayer) historyObject.set("two-player", obj.twoPlayer);
+    if (obj.coins) historyObject.set("coins", obj.coins);
+    if (obj.epic) historyObject.set("epic", obj.epic);
+    if (obj.legendary) historyObject.set("legendary", obj.legendary);
+    if (obj.mythic) historyObject.set("mythic", obj.mythic);
+    if (obj.song) {
+        historyObject.set("song", obj.song);
+        if (obj.customSong) historyObject.set("custom-song", obj.customSong);
+        historyObject.set("song-id", obj.songID);
+    }
+    if (obj.demonFilter != 0) historyObject.set("demon-filter", obj.demonFilter);
+    if (obj.noStar) historyObject.set("no-star", obj.noStar);
+    if (obj.star) historyObject.set("star", obj.star);
+
+    return historyObject;
 }

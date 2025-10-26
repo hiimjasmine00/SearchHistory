@@ -1,13 +1,11 @@
 #include "../SearchHistory.hpp"
 #include <cocos2d.h>
 
-typedef std::function<void(const SearchHistoryObject&)> SearchCallback;
-typedef std::function<void(int)> RemoveCallback;
+typedef std::function<void()> SearchCallback;
+typedef std::function<void()> RemoveCallback;
 
-class SearchHistoryNode : public cocos2d::CCNode {
+class SearchHistoryNode : public cocos2d::CCLayer {
 protected:
-    inline static constexpr std::array lengths = { "Tiny", "Short", "Medium", "Long", "XL", "Plat." };
-
     int m_index;
     int m_count;
 public:

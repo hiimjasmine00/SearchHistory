@@ -1,7 +1,8 @@
-#include "SearchHistoryNode.hpp"
 #include "SearchHistoryPopup.hpp"
+#include "SearchFilterPopup.hpp"
+#include "SearchHistoryNode.hpp"
+#include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
@@ -25,6 +26,7 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
     m_closeBtn->setID("close-button");
 
     m_searchCallback = std::move(callback);
+    m_searchFilter.type = -1;
 
     auto background = CCScale9Sprite::create("square02_001.png", { 0, 0, 80, 80 });
     background->setContentSize({ 400.0f, 195.0f });
@@ -62,12 +64,18 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
     m_buttonMenu->addChild(m_nextButton);
 
     auto clearButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.6f, [this](auto) {
-        createQuickPopup("Clear History", "Are you sure you want to clear your search history?", "No", "Yes", [this](auto, bool btn2) {
-            if (btn2) {
-                SearchHistory::clear();
-                page(0);
+        createQuickPopup(
+            "Clear History",
+            "Are you sure you want to clear your search history?",
+            "No",
+            "Yes",
+            [this](auto, bool btn2) {
+                if (btn2) {
+                    SearchHistory::history.clear();
+                    page(0);
+                }
             }
-        });
+        );
     });
     clearButton->setPosition({ 420.0f, 270.0f });
     clearButton->setID("clear-button");
@@ -80,13 +88,29 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
     m_countLabel->setID("count-label");
     m_mainLayer->addChild(m_countLabel);
 
-    m_searchInput = TextInput::create(400.0f, "Search History...");
+    m_searchInput = TextInput::create(360.0f, "Search History...");
     m_searchInput->setCommonFilter(CommonFilter::Any);
     m_searchInput->setTextAlign(TextInputAlign::Left);
-    m_searchInput->setPosition({ 220.0f, 235.0f });
-    m_searchInput->setCallback([this](auto) { page(0); });
+    m_searchInput->setPosition({ 200.0f, 235.0f });
+    m_searchInput->setCallback([this](auto) {
+        page(0);
+    });
     m_searchInput->setID("search-input");
     m_mainLayer->addChild(m_searchInput);
+
+    auto filterSprite = ButtonSprite::create(
+        CCSprite::createWithSpriteFrameName("GJ_filterIcon_001.png"), 32, false, 32.0f, "GJ_button_01.png", 1.0f);
+    filterSprite->setScale(0.7f);
+    m_filterButton = CCMenuItemExt::createSpriteExtra(filterSprite, [this, filterSprite](auto) {
+        SearchFilterPopup::create(m_searchFilter, [this, filterSprite](SearchHistoryObject filter) {
+            m_searchFilter = std::move(filter);
+            filterSprite->updateBGImage(m_searchFilter.empty() ? "GJ_button_01.png" : "GJ_button_02.png");
+            page(0);
+        })->show();
+    });
+    m_filterButton->setPosition({ 405.0f, 235.0f });
+    m_filterButton->setID("filter-button");
+    m_buttonMenu->addChild(m_filterButton);
 
     page(0);
 
@@ -96,10 +120,11 @@ bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
 void SearchHistoryPopup::page(int p) {
     m_scrollLayer->m_contentLayer->removeAllChildren();
 
-    auto query = string::toLower(m_searchInput->getString());
-    auto history = ranges::filter(SearchHistory::get(), [&query](const SearchHistoryObject& object) {
-        return string::toLower(object.query).find(query) != std::string::npos;
-    });
+    m_searchFilter.query = string::toLower(m_searchInput->getString());
+    std::vector<SearchHistoryObject> history;
+    for (auto& object : SearchHistory::history) {
+        if (object.contains(m_searchFilter)) history.push_back(object);
+    }
 
     auto count = history.size();
     m_prevButton->setVisible(p > 0);
@@ -110,10 +135,12 @@ void SearchHistoryPopup::page(int p) {
     auto white = mod->getSettingValue<bool>("white-time");
     auto dark = Loader::get()->isModLoaded("bitz.darkmode_v4");
     for (int i = p * 10; i < (p + 1) * 10 && i < count; i++) {
-        m_scrollLayer->m_contentLayer->addChild(SearchHistoryNode::create(history[i], i, count, [this](const SearchHistoryObject& object) {
-            m_searchCallback(object);
+        auto& object = SearchHistory::history[history[i].index];
+        auto index = object.index;
+        m_scrollLayer->m_contentLayer->addChild(SearchHistoryNode::create(object, i, count, [this, index] {
+            m_searchCallback(index);
             onClose(nullptr);
-        }, [this](int index) {
+        }, [this, index] {
             SearchHistory::remove(index);
             page(m_page);
         }, h12, white, dark));
@@ -122,7 +149,7 @@ void SearchHistoryPopup::page(int p) {
     m_scrollLayer->m_contentLayer->updateLayout();
     m_scrollLayer->scrollToTop();
 
-    m_countLabel->setString(fmt::format("{} to {} of {}", count > 0 ? p * 10 + 1 : 0, std::min((p + 1) * 10, (int)count), count).c_str());
+    m_countLabel->setString(fmt::format("{} to {} of {}", count > 0 ? p * 10 + 1 : 0, std::min<int>((p + 1) * 10, count), count).c_str());
 
     m_page = p;
 }
