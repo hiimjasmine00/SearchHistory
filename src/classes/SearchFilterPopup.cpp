@@ -3,6 +3,7 @@
 #include <Geode/binding/DemonFilterSelectLayer.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -206,7 +207,7 @@ bool SearchFilterPopup::setup(const SearchHistoryObject& filter, SearchFilterCal
     m_songInput->setCommonFilter(CommonFilter::Uint);
     m_songInput->setTextAlign(TextInputAlign::Center);
     m_songInput->setCallback([this](const std::string& text) {
-        std::from_chars(text.data(), text.data() + text.size(), m_searchFilter.songID);
+        jasmine::convert::toInt(text, m_searchFilter.songID);
         m_searchFilter.songID = std::max(m_searchFilter.songID, 0);
     });
     if (m_searchFilter.song && m_searchFilter.customSong) {

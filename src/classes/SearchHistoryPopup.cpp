@@ -2,7 +2,7 @@
 #include "SearchFilterPopup.hpp"
 #include "SearchHistoryNode.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/loader/Mod.hpp>
+#include <jasmine/setting.hpp>
 
 using namespace geode::prelude;
 
@@ -130,9 +130,8 @@ void SearchHistoryPopup::page(int p) {
     m_prevButton->setVisible(p > 0);
     m_nextButton->setVisible(p < (count > 0 ? (count - 1) / 10 : 0));
 
-    auto mod = Mod::get();
-    auto h12 = mod->getSettingValue<bool>("12-hour-time");
-    auto white = mod->getSettingValue<bool>("white-time");
+    auto h12 = jasmine::setting::getValue<bool>("12-hour-time");
+    auto white = jasmine::setting::getValue<bool>("white-time");
     auto dark = Loader::get()->isModLoaded("bitz.darkmode_v4");
     for (int i = p * 10; i < (p + 1) * 10 && i < count; i++) {
         auto& object = SearchHistory::history[history[i].index];

@@ -44,28 +44,31 @@ bool SearchHistoryObject::operator==(const SearchHistoryObject& other) const {
 bool SearchHistoryObject::contains(const SearchHistoryObject& other) const {
     if (other.type > -1 && type != other.type) return false;
     if (!other.query.empty() && !string::toLower(query).contains(string::toLower(other.query))) return false;
+    if (type >= 2) return true;
     for (auto diff : other.difficulties) {
         if (!std::ranges::contains(difficulties, diff)) return false;
     }
-    for (auto len : other.lengths) {
-        if (!std::ranges::contains(lengths, len)) return false;
-    }
-    if (other.uncompleted && !uncompleted) return false;
-    if (other.completed && !completed) return false;
-    if (other.featured && !featured) return false;
-    if (other.original && !original) return false;
-    if (other.twoPlayer && !twoPlayer) return false;
-    if (other.coins && !coins) return false;
-    if (other.epic && !epic) return false;
-    if (other.legendary && !legendary) return false;
-    if (other.mythic && !mythic) return false;
-    if (other.song) {
-        if (!song) return false;
-        if (customSong != other.customSong) return false;
-        if (other.songID > 0 && songID != other.songID) return false;
+    if (type < 1) {
+        for (auto len : other.lengths) {
+            if (!std::ranges::contains(lengths, len)) return false;
+        }
+        if (other.uncompleted && !uncompleted) return false;
+        if (other.completed && !completed) return false;
+        if (other.featured && !featured) return false;
+        if (other.original && !original) return false;
+        if (other.twoPlayer && !twoPlayer) return false;
+        if (other.coins && !coins) return false;
+        if (other.epic && !epic) return false;
+        if (other.legendary && !legendary) return false;
+        if (other.mythic && !mythic) return false;
+        if (other.song) {
+            if (!song) return false;
+            if (customSong != other.customSong) return false;
+            if (other.songID > 0 && songID != other.songID) return false;
+        }
+        if (other.noStar && !noStar) return false;
     }
     if (other.demonFilter > 0 && demonFilter != other.demonFilter) return false;
-    if (other.noStar && !noStar) return false;
     if (other.star && !star) return false;
     return true;
 }
@@ -89,29 +92,9 @@ bool SearchHistoryObject::empty() const {
         !star;
 }
 
-void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
-    std::vector<int> difficulties;
-    if (search->m_difficulty != "-") {
-        for (auto& diff : string::split(search->m_difficulty, ",")) {
-            int num;
-            if (auto res = std::from_chars(diff.data(), diff.data() + diff.size(), num); res.ec == std::errc()) {
-                difficulties.push_back(num);
-            }
-        }
-    }
-
-    std::vector<int> lengths;
-    if (search->m_length != "-") {
-        for (auto& len : string::split(search->m_length, ",")) {
-            int num;
-            if (auto res = std::from_chars(len.data(), len.data() + len.size(), num); res.ec == std::errc()) {
-                lengths.push_back(num);
-            }
-        }
-    }
-
+void SearchHistory::add(GJSearchObject* search, std::vector<int> difficulties, std::vector<int> lengths, int type) {
     SearchHistoryObject obj;
-    obj.time = time;
+    obj.time = time(0);
     obj.type = type;
     obj.query = search->m_searchQuery;
     obj.difficulties = std::move(difficulties);
@@ -132,13 +115,8 @@ void SearchHistory::add(GJSearchObject* search, time_t time, int type) {
     obj.noStar = search->m_noStarFilter;
     obj.star = search->m_starFilter;
 
-    auto found = std::ranges::find_if(history, [&obj](const SearchHistoryObject& o) {
-        return obj == o;
-    });
-    if (found != history.end()) {
-        history.erase(found);
-    }
-
+    auto subrange = std::ranges::remove(history, obj);
+    history.erase(subrange.begin(), subrange.end());
     history.insert(history.begin(), std::move(obj));
     update();
 }
@@ -161,26 +139,26 @@ Result<SearchHistoryObject> matjson::Serialize<SearchHistoryObject>::fromJson(co
     if (!value.isObject()) return Err("Expected object");
 
     SearchHistoryObject obj;
-    if (auto time = value.get<int64_t>("time").ok()) obj.time = *time;
-    if (auto type = value.get<int>("type").ok()) obj.type = *type;
-    if (auto query = value.get<std::string>("query").ok()) obj.query = *std::move(query);
-    if (auto difficulties = value.get<std::vector<int>>("difficulties").ok()) obj.difficulties = *std::move(difficulties);
-    if (auto lengths = value.get<std::vector<int>>("lengths").ok()) obj.lengths = *std::move(lengths);
-    if (auto uncompleted = value.get<bool>("uncompleted").ok()) obj.uncompleted = *uncompleted;
-    if (auto completed = value.get<bool>("completed").ok()) obj.completed = *completed;
-    if (auto featured = value.get<bool>("featured").ok()) obj.featured = *featured;
-    if (auto original = value.get<bool>("original").ok()) obj.original = *original;
-    if (auto twoPlayer = value.get<bool>("two-player").ok()) obj.twoPlayer = *twoPlayer;
-    if (auto coins = value.get<bool>("coins").ok()) obj.coins = *coins;
-    if (auto epic = value.get<bool>("epic").ok()) obj.epic = *epic;
-    if (auto legendary = value.get<bool>("legendary").ok()) obj.legendary = *legendary;
-    if (auto mythic = value.get<bool>("mythic").ok()) obj.mythic = *mythic;
-    if (auto song = value.get<bool>("song").ok()) obj.song = *song;
-    if (auto customSong = value.get<bool>("custom-song").ok()) obj.customSong = *customSong;
-    if (auto songID = value.get<int>("song-id").ok()) obj.songID = *songID;
-    if (auto demonFilter = value.get<int>("demon-filter").ok()) obj.demonFilter = *demonFilter;
-    if (auto noStar = value.get<bool>("no-star").ok()) obj.noStar = *noStar;
-    if (auto star = value.get<bool>("star").ok()) obj.star = *star;
+    if (auto time = value.get<int64_t>("time")) obj.time = time.unwrap();
+    if (auto type = value.get<int>("type")) obj.type = type.unwrap();
+    if (auto query = value.get<std::string>("query")) obj.query = std::move(query).unwrap();
+    if (auto difficulties = value.get<std::vector<int>>("difficulties")) obj.difficulties = std::move(difficulties).unwrap();
+    if (auto lengths = value.get<std::vector<int>>("lengths")) obj.lengths = std::move(lengths).unwrap();
+    if (auto uncompleted = value.get<bool>("uncompleted")) obj.uncompleted = uncompleted.unwrap();
+    if (auto completed = value.get<bool>("completed")) obj.completed = completed.unwrap();
+    if (auto featured = value.get<bool>("featured")) obj.featured = featured.unwrap();
+    if (auto original = value.get<bool>("original")) obj.original = original.unwrap();
+    if (auto twoPlayer = value.get<bool>("two-player")) obj.twoPlayer = twoPlayer.unwrap();
+    if (auto coins = value.get<bool>("coins")) obj.coins = coins.unwrap();
+    if (auto epic = value.get<bool>("epic")) obj.epic = epic.unwrap();
+    if (auto legendary = value.get<bool>("legendary")) obj.legendary = legendary.unwrap();
+    if (auto mythic = value.get<bool>("mythic")) obj.mythic = mythic.unwrap();
+    if (auto song = value.get<bool>("song")) obj.song = song.unwrap();
+    if (auto customSong = value.get<bool>("custom-song")) obj.customSong = customSong.unwrap();
+    if (auto songID = value.get<int>("song-id")) obj.songID = songID.unwrap();
+    if (auto demonFilter = value.get<int>("demon-filter")) obj.demonFilter = demonFilter.unwrap();
+    if (auto noStar = value.get<bool>("no-star")) obj.noStar = noStar.unwrap();
+    if (auto star = value.get<bool>("star")) obj.star = star.unwrap();
     return Ok(std::move(obj));
 }
 

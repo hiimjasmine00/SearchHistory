@@ -34,7 +34,7 @@ class SearchHistory {
 public:
     static std::vector<SearchHistoryObject> history;
 
-    static void add(GJSearchObject*, time_t, int);
+    static void add(GJSearchObject*, std::vector<int>, std::vector<int>, int);
     static void remove(int);
     static void update();
 };
