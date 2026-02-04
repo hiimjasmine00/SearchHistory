@@ -9,7 +9,7 @@ using namespace geode::prelude;
 
 SearchFilterPopup* SearchFilterPopup::create(const SearchHistoryObject& filter, SearchFilterCallback callback) {
     auto ret = new SearchFilterPopup();
-    if (ret->initAnchored(300.0f, 250.0f, filter, std::move(callback), "GJ_square02.png")) {
+    if (ret->init(filter, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -22,7 +22,9 @@ void updateButton(CCMenuItemSpriteExtra* button, bool enabled, bool clickable) {
     button->setEnabled(clickable || enabled);
 }
 
-bool SearchFilterPopup::setup(const SearchHistoryObject& filter, SearchFilterCallback callback) {
+bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCallback callback) {
+    if (!Popup::init(300.0f, 250.0f, "GJ_square02.png")) return false;
+
     setID("SearchFilterPopup");
     setTitle("Search Filter", "bigFont.fnt", 0.53f, 15.0f);
     m_title->setID("search-filter-title");
@@ -207,7 +209,7 @@ bool SearchFilterPopup::setup(const SearchHistoryObject& filter, SearchFilterCal
     m_songInput->setCommonFilter(CommonFilter::Uint);
     m_songInput->setTextAlign(TextInputAlign::Center);
     m_songInput->setCallback([this](const std::string& text) {
-        jasmine::convert::toInt(text, m_searchFilter.songID);
+        jasmine::convert::to(text, m_searchFilter.songID);
         m_searchFilter.songID = std::max(m_searchFilter.songID, 0);
     });
     if (m_searchFilter.song && m_searchFilter.customSong) {

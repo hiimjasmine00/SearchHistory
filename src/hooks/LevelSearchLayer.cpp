@@ -13,11 +13,11 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
         auto onSearchHook = jasmine::hook::get(self.m_hooks, "LevelSearchLayer::onSearch", !incognitoMode);
         auto onSearchUserHook = jasmine::hook::get(self.m_hooks, "LevelSearchLayer::onSearchUser", !incognitoMode);
 
-        new EventListener([onSearchHook, onSearchUserHook](std::shared_ptr<SettingV3> setting) {
+        SettingChangedEventV3(GEODE_MOD_ID, "incognito-mode").listen([onSearchHook, onSearchUserHook](std::shared_ptr<SettingV3> setting) {
             auto value = !std::static_pointer_cast<BoolSettingV3>(std::move(setting))->getValue();
             jasmine::hook::toggle(onSearchHook, value);
             jasmine::hook::toggle(onSearchUserHook, value);
-        }, SettingChangedFilterV3(GEODE_MOD_ID, "incognito-mode"));
+        }).leak();
     }
 
     bool init(int type) {
@@ -52,8 +52,8 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
                 glm->setBoolForKey(object.noStar, "nostar_filter");
                 glm->setBoolForKey(object.featured, "featured_filter");
                 glm->setBoolForKey(object.epic, "epic_filter");
-                glm->setBoolForKey(object.mythic, "legendary_filter"); // Nice job RobTop
-                glm->setBoolForKey(object.legendary, "mythic_filter"); // Nice job RobTop
+                glm->setBoolForKey(object.mythic, "legendary_filter");
+                glm->setBoolForKey(object.legendary, "mythic_filter");
                 glm->setBoolForKey(object.customSong, "customsong_filter");
                 glm->setIntForKey(object.songID, "song_filter");
             }

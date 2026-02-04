@@ -3,9 +3,9 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
 
-typedef std::function<void(SearchHistoryObject)> SearchFilterCallback;
+typedef geode::Function<void(SearchHistoryObject)> SearchFilterCallback;
 
-class SearchFilterPopup : public geode::Popup<const SearchHistoryObject&, SearchFilterCallback>, public DemonFilterDelegate {
+class SearchFilterPopup : public geode::Popup, public DemonFilterDelegate {
 protected:
     SearchHistoryObject m_searchFilter;
     SearchFilterCallback m_searchCallback;
@@ -20,7 +20,7 @@ protected:
     cocos2d::CCLabelBMFont* m_songLabel;
     geode::TextInput* m_songInput;
 
-    bool setup(const SearchHistoryObject&, SearchFilterCallback) override;
+    bool init(const SearchHistoryObject&, SearchFilterCallback);
     void updateTypes();
     void updateDifficulties();
     void updateLengths();

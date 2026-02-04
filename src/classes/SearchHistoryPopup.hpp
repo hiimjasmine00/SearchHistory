@@ -3,9 +3,9 @@
 #include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/ui/TextInput.hpp>
 
-typedef std::function<void(int)> SearchHistoryCallback;
+typedef geode::Function<void(int)> SearchHistoryCallback;
 
-class SearchHistoryPopup : public geode::Popup<SearchHistoryCallback> {
+class SearchHistoryPopup : public geode::Popup {
 protected:
     SearchHistoryObject m_searchFilter;
     geode::ScrollLayer* m_scrollLayer;
@@ -17,7 +17,7 @@ protected:
     cocos2d::CCLabelBMFont* m_countLabel;
     int m_page;
 
-    bool setup(SearchHistoryCallback) override;
+    bool init(SearchHistoryCallback);
 public:
     static SearchHistoryPopup* create(SearchHistoryCallback);
 

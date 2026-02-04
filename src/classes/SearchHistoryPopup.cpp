@@ -8,7 +8,7 @@ using namespace geode::prelude;
 
 SearchHistoryPopup* SearchHistoryPopup::create(SearchHistoryCallback callback) {
     auto ret = new SearchHistoryPopup();
-    if (ret->initAnchored(440.0f, 290.0f, std::move(callback), "GJ_square02.png")) {
+    if (ret->init(std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -16,7 +16,9 @@ SearchHistoryPopup* SearchHistoryPopup::create(SearchHistoryCallback callback) {
     return nullptr;
 }
 
-bool SearchHistoryPopup::setup(SearchHistoryCallback callback) {
+bool SearchHistoryPopup::init(SearchHistoryCallback callback) {
+    if (!Popup::init(440.0f, 290.0f, "GJ_square02.png")) return false;
+
     setID("SearchHistoryPopup");
     setTitle("Search History", "bigFont.fnt", 0.53f);
     m_title->setID("search-history-title");

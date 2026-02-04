@@ -89,13 +89,15 @@ bool SearchHistoryNode::init(
     buttonMenu->setID("button-menu");
     addChild(buttonMenu);
 
-    auto removeButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.5f, [this, remove = std::move(remove)](auto) {
+    auto removeButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.5f, [
+        this, remove = std::move(remove)
+    ](auto) mutable {
         createQuickPopup(
             "Remove Search",
             "Are you sure you want to remove this search history entry?",
             "No",
             "Yes",
-            [this, remove = std::move(remove)](auto, bool btn2) {
+            [this, remove = std::move(remove)](auto, bool btn2) mutable {
                 if (btn2) remove();
             }
         );
@@ -104,7 +106,9 @@ bool SearchHistoryNode::init(
     removeButton->setID("remove-button");
     buttonMenu->addChild(removeButton);
 
-    auto searchButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_undoBtn_001.png", 0.6f, [this, search = std::move(search)](auto) {
+    auto searchButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_undoBtn_001.png", 0.6f, [
+        this, search = std::move(search)
+    ](auto) mutable {
         search();
     });
     searchButton->setPosition({ 350.0f, 25.0f });
@@ -290,7 +294,7 @@ bool SearchHistoryNode::init(
         }
     }
 
-    auto tm = fmt::localtime(object.time);
+    auto tm = localtime(object.time);
     auto timeLabel = CCLabelBMFont::create(
         (h12 ? fmt::format("{:%Y-%m-%d %I:%M:%S %p}", tm) : fmt::format("{:%Y-%m-%d %H:%M:%S}", tm)).c_str(), "chatFont.fnt");
     timeLabel->setColor(white ? ccColor3B { 255, 255, 255 } : ccColor3B { 51, 51, 51 });

@@ -1,8 +1,8 @@
 #include "../SearchHistory.hpp"
 #include <cocos2d.h>
 
-typedef std::function<void()> SearchCallback;
-typedef std::function<void()> RemoveCallback;
+typedef geode::Function<void()> SearchCallback;
+typedef geode::Function<void()> RemoveCallback;
 
 class SearchHistoryNode : public cocos2d::CCLayer {
 protected:
