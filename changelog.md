@@ -1,5 +1,5 @@
 # Search History Changelog
-## v1.2.1 (2026-02-04)
+## v1.2.1 (2026-02-05)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
 
 ## v1.2.0 (2025-10-26)

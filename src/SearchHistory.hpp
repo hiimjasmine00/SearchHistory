@@ -30,13 +30,12 @@ struct SearchHistoryObject {
     bool empty() const;
 };
 
-class SearchHistory {
-public:
-    static std::vector<SearchHistoryObject> history;
+namespace SearchHistory {
+    extern std::vector<SearchHistoryObject> history;
 
-    static void add(GJSearchObject*, std::vector<int>, std::vector<int>, int);
-    static void remove(int);
-    static void update();
+    void add(GJSearchObject*, std::vector<int>, std::vector<int>, int);
+    void remove(int);
+    void update();
 };
 
 template<>

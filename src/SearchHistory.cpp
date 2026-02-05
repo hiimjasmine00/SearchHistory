@@ -7,10 +7,13 @@ using namespace geode::prelude;
 std::vector<SearchHistoryObject> SearchHistory::history;
 
 $on_mod(Loaded) {
-    for (auto& object : Mod::get()->getSavedValue<std::vector<SearchHistoryObject>>("search-history")) {
-        if (!std::ranges::contains(SearchHistory::history, object)) {
-            SearchHistory::history.push_back(std::move(object));
+    auto history = Mod::get()->getSavedValue<std::vector<SearchHistoryObject>>("search-history");
+    for (auto it = history.begin(); it != history.end();) {
+        if (!std::ranges::contains(SearchHistory::history, *it)) {
+            SearchHistory::history.push_back(std::move(*it));
+            it = history.erase(it);
         }
+        else ++it;
     }
     SearchHistory::update();
 }
