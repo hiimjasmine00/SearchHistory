@@ -30,7 +30,7 @@ bool SearchHistoryPopup::init(SearchHistoryCallback callback) {
     m_searchCallback = std::move(callback);
     m_searchFilter.type = -1;
 
-    auto background = CCScale9Sprite::create("square02_001.png", { 0, 0, 80, 80 });
+    auto background = NineSlice::create("square02_001.png", { 0, 0, 80, 80 });
     background->setContentSize({ 400.0f, 195.0f });
     background->setPosition({ 220.0f, 117.5f });
     background->setOpacity(127);

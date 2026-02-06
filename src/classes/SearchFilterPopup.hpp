@@ -10,9 +10,9 @@ protected:
     SearchHistoryObject m_searchFilter;
     SearchFilterCallback m_searchCallback;
     CCMenuItemSpriteExtra* m_demonFilterButton;
-    geode::Ref<cocos2d::CCArray> m_typeButtons;
-    geode::Ref<cocos2d::CCArray> m_difficultyButtons;
-    geode::Ref<cocos2d::CCArray> m_lengthButtons;
+    std::vector<CCMenuItemSpriteExtra*> m_typeButtons;
+    std::vector<CCMenuItemSpriteExtra*> m_difficultyButtons;
+    std::vector<CCMenuItemSpriteExtra*> m_lengthButtons;
     CCMenuItemSpriteExtra* m_normalButton;
     CCMenuItemSpriteExtra* m_customButton;
     CCMenuItemSpriteExtra* m_prevButton;

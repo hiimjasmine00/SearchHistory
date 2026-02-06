@@ -30,7 +30,7 @@ bool SearchHistoryNode::init(
     m_index = index;
     m_count = count;
 
-    auto background = CCScale9Sprite::create(
+    auto background = NineSlice::create(
         index % 10 == 0 ? "square-top.png"_spr :
         index % 10 == 9 || index == count - 1 ? "square-bottom.png"_spr :
         "square-middle.png"_spr,

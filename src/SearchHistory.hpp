@@ -36,7 +36,7 @@ namespace SearchHistory {
     void add(GJSearchObject*, std::vector<int>, std::vector<int>, int);
     void remove(int);
     void update();
-};
+}
 
 template<>
 struct matjson::Serialize<SearchHistoryObject> {

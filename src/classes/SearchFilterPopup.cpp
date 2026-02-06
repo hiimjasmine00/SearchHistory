@@ -36,9 +36,6 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
 
     m_searchFilter = filter;
     m_searchCallback = std::move(callback);
-    m_typeButtons = CCArray::create();
-    m_difficultyButtons = CCArray::create();
-    m_lengthButtons = CCArray::create();
 
     auto typesMenu = CCMenu::create();
     typesMenu->setPosition({ 150.0f, 200.0f });
@@ -62,7 +59,7 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
         typeButton->setTag(type);
         typeButton->setID(id);
         typesMenu->addChild(typeButton);
-        m_typeButtons->addObject(typeButton);
+        m_typeButtons.push_back(typeButton);
     }
 
     typesMenu->updateLayout();
@@ -280,7 +277,7 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
         diffButton->setTag(difficulty);
         diffButton->setID(id);
         difficultesMenu->addChild(diffButton);
-        m_difficultyButtons->addObject(diffButton);
+        m_difficultyButtons.push_back(diffButton);
     }
 
     difficultesMenu->updateLayout();
@@ -317,7 +314,7 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
         lengthButton->setTag(i);
         lengthButton->setID(buttonID);
         lengthsMenu->addChild(lengthButton);
-        m_lengthButtons->addObject(lengthButton);
+        m_lengthButtons.push_back(lengthButton);
     }
 
     auto starButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_starsIcon_001.png", 0.7f, [this](CCMenuItemSpriteExtra* sender) {
@@ -347,14 +344,14 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
 }
 
 void SearchFilterPopup::updateTypes() {
-    for (auto button : CCArrayExt<CCMenuItemSpriteExtra*>(m_typeButtons)) {
+    for (auto button : m_typeButtons) {
         updateButton(button, button->getTag() == m_searchFilter.type, true);
     }
 }
 
 void SearchFilterPopup::updateDifficulties() {
     auto spriteFrameCache = CCSpriteFrameCache::get();
-    for (auto button : CCArrayExt<CCMenuItemSpriteExtra*>(m_difficultyButtons)) {
+    for (auto button : m_difficultyButtons) {
         auto sprite = static_cast<CCSprite*>(button->getNormalImage());
         auto tag = button->getTag();
         auto enabled = std::ranges::contains(m_searchFilter.difficulties, tag);
@@ -369,7 +366,7 @@ void SearchFilterPopup::updateDifficulties() {
 }
 
 void SearchFilterPopup::updateLengths() {
-    for (auto button : CCArrayExt<CCMenuItemSpriteExtra*>(m_lengthButtons)) {
+    for (auto button : m_lengthButtons) {
         static_cast<CCLabelBMFont*>(button->getNormalImage())->setColor(
             std::ranges::contains(m_searchFilter.lengths, button->getTag()) ? ccColor3B { 255, 255, 255 } : ccColor3B { 125, 125, 125 });
     }
