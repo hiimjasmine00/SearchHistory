@@ -3,7 +3,6 @@
 #include <Geode/binding/DemonFilterSelectLayer.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -51,11 +50,9 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     };
 
     for (auto [type, frameName, id] : types) {
-        auto typeButton = CCMenuItemExt::createSpriteExtraWithFrameName(frameName, type == 2 ? 0.65f : 0.8f, [this, type](auto) {
-            if (m_searchFilter.type == type) m_searchFilter.type = -1;
-            else m_searchFilter.type = type;
-            updateTypes();
-        });
+        auto typeSprite = CCSprite::createWithSpriteFrameName(frameName);
+        typeSprite->setScale(type == 2 ? 0.65f : 0.8f);
+        auto typeButton = CCMenuItemSpriteExtra::create(typeSprite, this, menu_selector(SearchFilterPopup::onType));
         typeButton->setTag(type);
         typeButton->setID(id);
         typesMenu->addChild(typeButton);
@@ -86,28 +83,17 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     };
 
     for (auto [offset, frameName, id] : filters) {
-        auto& field = *reinterpret_cast<bool*>(reinterpret_cast<uintptr_t>(&m_searchFilter) + offset);
+        auto filterSprite = CCSprite::createWithSpriteFrameName(frameName);
+        filterSprite->setScale(0.7f);
         CCMenuItemSpriteExtra* filterButton = nullptr;
         if (offset == offsetof(SearchHistoryObject, song)) {
-            filterButton = CCMenuItemExt::createSpriteExtraWithFrameName(frameName, 0.7f, [this, &field](CCMenuItemSpriteExtra* sender) {
-                field = !field;
-                if (m_searchFilter.song && !m_searchFilter.customSong && m_searchFilter.songID == 0) m_searchFilter.songID = 1;
-                updateButton(sender, field, true);
-                updateButton(m_normalButton, field, false);
-                updateButton(m_customButton, field, false);
-                updateButton(m_prevButton, field, false);
-                updateButton(m_nextButton, field, false);
-                m_songLabel->setColor(field ? ccColor3B { 255, 255, 255 } : ccColor3B { 125, 125, 125 });
-                m_songInput->setEnabled(field);
-            });
+            filterButton = CCMenuItemSpriteExtra::create(filterSprite, this, menu_selector(SearchFilterPopup::onSongFilter));
         }
         else {
-            filterButton = CCMenuItemExt::createSpriteExtraWithFrameName(frameName, 0.7f, [this, &field](CCMenuItemSpriteExtra* sender) {
-                field = !field;
-                updateButton(sender, field, true);
-            });
+            filterButton = CCMenuItemSpriteExtra::create(filterSprite, this, menu_selector(SearchFilterPopup::onFilter));
         }
-        updateButton(filterButton, field, true);
+        updateButton(filterButton, *reinterpret_cast<bool*>(reinterpret_cast<uintptr_t>(&m_searchFilter) + offset), true);
+        filterButton->setTag(offset);
         filterButton->setID(id);
         filtersMenu->addChild(filterButton);
     }
@@ -123,63 +109,30 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     customSprite->setScale(0.8f);
     customSprite->setCascadeColorEnabled(true);
 
-    m_normalButton = CCMenuItemExt::createSpriteExtra(normalSprite, [this, normalSprite, customSprite](auto) {
-        if (m_searchFilter.customSong) {
-            m_searchFilter.customSong = false;
-            m_searchFilter.songID = 1;
-            normalSprite->updateBGImage("GJ_button_01.png");
-            customSprite->updateBGImage("GJ_button_04.png");
-            m_prevButton->setVisible(true);
-            m_nextButton->setVisible(true);
-            m_songLabel->setVisible(true);
-            m_songInput->setVisible(false);
-            m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
-            m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
-        }
-    });
+    m_normalButton = CCMenuItemSpriteExtra::create(normalSprite, this, menu_selector(SearchFilterPopup::onNormalSong));
     m_normalButton->setPosition({ 120.0f, 140.0f });
     updateButton(m_normalButton, m_searchFilter.song, false);
     m_normalButton->setID("normal-song-button");
     m_buttonMenu->addChild(m_normalButton);
 
-    m_customButton = CCMenuItemExt::createSpriteExtra(customSprite, [this, normalSprite, customSprite](auto) {
-        if (!m_searchFilter.customSong) {
-            m_searchFilter.customSong = true;
-            m_searchFilter.songID = 0;
-            normalSprite->updateBGImage("GJ_button_04.png");
-            customSprite->updateBGImage("GJ_button_01.png");
-            m_prevButton->setVisible(false);
-            m_nextButton->setVisible(false);
-            m_songLabel->setVisible(false);
-            m_songInput->setVisible(true);
-            m_songInput->setString("");
-        }
-    });
+    m_customButton = CCMenuItemSpriteExtra::create(customSprite, this, menu_selector(SearchFilterPopup::onCustomSong));
     m_customButton->setPosition({ 180.0f, 140.0f });
     updateButton(m_customButton, m_searchFilter.song, false);
     m_customButton->setID("custom-song-button");
     m_buttonMenu->addChild(m_customButton);
 
-    m_prevButton = CCMenuItemExt::createSpriteExtraWithFrameName("edit_leftBtn_001.png", 1.0f, [this](auto) {
-        if (m_searchFilter.songID > 1) {
-            m_searchFilter.songID--;
-            m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
-            m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
-        }
-    });
+    m_prevButton = CCMenuItemSpriteExtra::create(
+        CCSprite::createWithSpriteFrameName("edit_leftBtn_001.png"), this, menu_selector(SearchFilterPopup::onPrevSong)
+    );
     m_prevButton->setPosition({ 55.0f, 120.0f });
     m_prevButton->setVisible(!m_searchFilter.customSong);
     updateButton(m_prevButton, m_searchFilter.song, false);
     m_prevButton->setID("prev-song-button");
     m_buttonMenu->addChild(m_prevButton);
 
-    m_nextButton = CCMenuItemExt::createSpriteExtraWithFrameName("edit_rightBtn_001.png", 1.0f, [this](auto) {
-        if (m_searchFilter.songID < 40) {
-            m_searchFilter.songID++;
-            m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
-            m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
-        }
-    });
+    m_nextButton = CCMenuItemSpriteExtra::create(
+        CCSprite::createWithSpriteFrameName("edit_rightBtn_001.png"), this, menu_selector(SearchFilterPopup::onNextSong)
+    );
     m_nextButton->setPosition({ 245.0f, 120.0f });
     m_nextButton->setVisible(!m_searchFilter.customSong);
     updateButton(m_nextButton, m_searchFilter.song, false);
@@ -205,25 +158,16 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     m_songInput->setEnabled(m_searchFilter.song);
     m_songInput->setCommonFilter(CommonFilter::Uint);
     m_songInput->setTextAlign(TextInputAlign::Center);
-    m_songInput->setCallback([this](const std::string& text) {
-        jasmine::convert::to(text, m_searchFilter.songID);
-        m_searchFilter.songID = std::max(m_searchFilter.songID, 0);
-    });
+    m_songInput->setDelegate(this);
     if (m_searchFilter.song && m_searchFilter.customSong) {
         m_songInput->setString(m_searchFilter.songID > 0 ? fmt::to_string(m_searchFilter.songID) : "");
     }
     m_songInput->setID("song-input");
     m_mainLayer->addChild(m_songInput);
 
-    m_demonFilterButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_plus2Btn_001.png", 0.7f, [this](auto) {
-        auto layer = DemonFilterSelectLayer::create();
-        if (auto child = layer->m_buttonMenu->getChildByTag(m_searchFilter.demonFilter)) {
-            layer->selectRating(child);
-        }
-        layer->m_noElasticity = true;
-        layer->m_delegate = this;
-        layer->show();
-    });
+    auto demonFilterSprite = CCSprite::createWithSpriteFrameName("GJ_plus2Btn_001.png");
+    demonFilterSprite->setScale(0.7f);
+    m_demonFilterButton = CCMenuItemSpriteExtra::create(demonFilterSprite, this, menu_selector(SearchFilterPopup::onDemonFilter));
     m_demonFilterButton->setPosition({ 285.0f, 85.0f });
     m_demonFilterButton->setID("demon-filter-button");
     m_buttonMenu->addChild(m_demonFilterButton);
@@ -247,32 +191,14 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     };
 
     for (auto [difficulty, frameName, id] : difficulties) {
+        auto diffSprite = CCSprite::createWithSpriteFrameName(frameName);
+        diffSprite->setScale(0.7f);
         CCMenuItemSpriteExtra* diffButton = nullptr;
         if (difficulty > 0) {
-            diffButton = CCMenuItemExt::createSpriteExtraWithFrameName(frameName, 0.7f, [this, difficulty](auto) {
-                if (auto it = std::ranges::find(m_searchFilter.difficulties, difficulty); it != m_searchFilter.difficulties.end()) {
-                    m_searchFilter.difficulties.erase(it);
-                }
-                else {
-                    if (!m_searchFilter.difficulties.empty()) {
-                        auto firstDiff = m_searchFilter.difficulties[0];
-                        if (m_searchFilter.difficulties[0] < 0) m_searchFilter.difficulties.clear();
-                    }
-                    m_searchFilter.difficulties.push_back(difficulty);
-                }
-                updateDifficulties();
-            });
+            diffButton = CCMenuItemSpriteExtra::create(diffSprite, this, menu_selector(SearchFilterPopup::onDifficulty));
         }
         else {
-            diffButton = CCMenuItemExt::createSpriteExtraWithFrameName(frameName, 0.7f, [this, difficulty](auto) {
-                if (auto it = std::ranges::find(m_searchFilter.difficulties, difficulty); it != m_searchFilter.difficulties.end()) {
-                    m_searchFilter.difficulties.erase(it);
-                }
-                else {
-                    m_searchFilter.difficulties = { difficulty };
-                }
-                updateDifficulties();
-            });
+            diffButton = CCMenuItemSpriteExtra::create(diffSprite, this, menu_selector(SearchFilterPopup::onSpecialDifficulty));
         }
         diffButton->setTag(difficulty);
         diffButton->setID(id);
@@ -302,25 +228,16 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
         auto [labelText, buttonID] = lengths[i];
         auto lengthLabel = CCLabelBMFont::create(labelText, "bigFont.fnt");
         lengthLabel->setScale(0.4f);
-        auto lengthButton = CCMenuItemExt::createSpriteExtra(lengthLabel, [this, i](auto) {
-            if (auto it = std::ranges::find(m_searchFilter.lengths, i); it != m_searchFilter.lengths.end()) {
-                m_searchFilter.lengths.erase(it);
-            }
-            else {
-                m_searchFilter.lengths.push_back(i);
-            }
-            updateLengths();
-        });
+        auto lengthButton = CCMenuItemSpriteExtra::create(lengthLabel, this, menu_selector(SearchFilterPopup::onLength));
         lengthButton->setTag(i);
         lengthButton->setID(buttonID);
         lengthsMenu->addChild(lengthButton);
         m_lengthButtons.push_back(lengthButton);
     }
 
-    auto starButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_starsIcon_001.png", 0.7f, [this](CCMenuItemSpriteExtra* sender) {
-        m_searchFilter.star = !m_searchFilter.star;
-        updateButton(sender, m_searchFilter.star, true);
-    });
+    auto starSprite = CCSprite::createWithSpriteFrameName("GJ_starsIcon_001.png");
+    starSprite->setScale(0.7f);
+    auto starButton = CCMenuItemSpriteExtra::create(starSprite, this, menu_selector(SearchFilterPopup::onStar));
     updateButton(starButton, m_searchFilter.star, true);
     starButton->setID("star-button");
     lengthsMenu->addChild(starButton);
@@ -331,16 +248,146 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     updateDifficulties();
     updateLengths();
 
-    auto confirmSprite = ButtonSprite::create("Confirm", 0.8f);
-    auto confirmButton = CCMenuItemExt::createSpriteExtra(confirmSprite, [this](auto) {
-        m_searchCallback(std::move(m_searchFilter));
-        onClose(nullptr);
-    });
+    auto confirmButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Confirm", 0.8f), this, menu_selector(SearchFilterPopup::onConfirm));
     confirmButton->setPosition({ 150.0f, 25.0f });
     confirmButton->setID("confirm-button");
     m_buttonMenu->addChild(confirmButton);
 
     return true;
+}
+
+void SearchFilterPopup::onType(CCObject* sender) {
+    auto type = sender->getTag();
+    if (m_searchFilter.type == type) m_searchFilter.type = -1;
+    else m_searchFilter.type = type;
+    updateTypes();
+}
+
+void SearchFilterPopup::onSongFilter(CCObject* sender) {
+    m_searchFilter.song = !m_searchFilter.song;
+    if (m_searchFilter.song && !m_searchFilter.customSong && m_searchFilter.songID == 0) m_searchFilter.songID = 1;
+    updateButton(static_cast<CCMenuItemSpriteExtra*>(sender), m_searchFilter.song, true);
+    updateButton(m_normalButton, m_searchFilter.song, false);
+    updateButton(m_customButton, m_searchFilter.song, false);
+    updateButton(m_prevButton, m_searchFilter.song, false);
+    updateButton(m_nextButton, m_searchFilter.song, false);
+    m_songLabel->setColor(m_searchFilter.song ? ccColor3B { 255, 255, 255 } : ccColor3B { 125, 125, 125 });
+    m_songInput->setEnabled(m_searchFilter.song);
+}
+
+void SearchFilterPopup::onFilter(CCObject* sender) {
+    auto& field = *reinterpret_cast<bool*>(reinterpret_cast<uintptr_t>(&m_searchFilter) + sender->getTag());
+    field = !field;
+    updateButton(static_cast<CCMenuItemSpriteExtra*>(sender), field, true);
+}
+
+void SearchFilterPopup::onNormalSong(CCObject* sender) {
+    if (m_searchFilter.customSong) {
+        m_searchFilter.customSong = false;
+        m_searchFilter.songID = 1;
+        static_cast<ButtonSprite*>(m_normalButton->getNormalImage())->updateBGImage("GJ_button_01.png");
+        static_cast<ButtonSprite*>(m_customButton->getNormalImage())->updateBGImage("GJ_button_04.png");
+        m_prevButton->setVisible(true);
+        m_nextButton->setVisible(true);
+        m_songLabel->setVisible(true);
+        m_songInput->setVisible(false);
+        m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
+        m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
+    }
+}
+
+void SearchFilterPopup::onCustomSong(CCObject* sender) {
+    if (!m_searchFilter.customSong) {
+        m_searchFilter.customSong = true;
+        m_searchFilter.songID = 0;
+        static_cast<ButtonSprite*>(m_normalButton->getNormalImage())->updateBGImage("GJ_button_04.png");
+        static_cast<ButtonSprite*>(m_customButton->getNormalImage())->updateBGImage("GJ_button_01.png");
+        m_prevButton->setVisible(false);
+        m_nextButton->setVisible(false);
+        m_songLabel->setVisible(false);
+        m_songInput->setVisible(true);
+        m_songInput->setString("");
+    }
+}
+
+void SearchFilterPopup::onPrevSong(CCObject* sender) {
+    if (m_searchFilter.songID > 1) {
+        m_searchFilter.songID--;
+        m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
+        m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
+    }
+}
+
+void SearchFilterPopup::onNextSong(CCObject* sender) {
+    if (m_searchFilter.songID < 40) {
+        m_searchFilter.songID++;
+        m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
+        m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
+    }
+}
+
+void SearchFilterPopup::textChanged(CCTextInputNode* input) {
+    if (auto id = numFromString<int>(input->getString())) {
+        m_searchFilter.songID = id.unwrap();
+    }
+    m_searchFilter.songID = std::max(m_searchFilter.songID, 0);
+}
+
+void SearchFilterPopup::onDemonFilter(CCObject* sender) {
+    auto layer = DemonFilterSelectLayer::create();
+    if (auto child = layer->m_buttonMenu->getChildByTag(m_searchFilter.demonFilter)) {
+        layer->selectRating(child);
+    }
+    layer->m_noElasticity = true;
+    layer->m_delegate = this;
+    layer->show();
+}
+
+void SearchFilterPopup::onDifficulty(CCObject* sender) {
+    auto difficulty = sender->getTag();
+    if (auto it = std::ranges::find(m_searchFilter.difficulties, difficulty); it != m_searchFilter.difficulties.end()) {
+        m_searchFilter.difficulties.erase(it);
+    }
+    else {
+        if (!m_searchFilter.difficulties.empty()) {
+            auto firstDiff = m_searchFilter.difficulties[0];
+            if (m_searchFilter.difficulties[0] < 0) m_searchFilter.difficulties.clear();
+        }
+        m_searchFilter.difficulties.push_back(difficulty);
+    }
+    updateDifficulties();
+}
+
+void SearchFilterPopup::onSpecialDifficulty(CCObject* sender) {
+    auto difficulty = sender->getTag();
+    if (auto it = std::ranges::find(m_searchFilter.difficulties, difficulty); it != m_searchFilter.difficulties.end()) {
+        m_searchFilter.difficulties.erase(it);
+    }
+    else {
+        m_searchFilter.difficulties = { difficulty };
+    }
+    updateDifficulties();
+}
+
+void SearchFilterPopup::onLength(CCObject* sender) {
+    auto length = sender->getTag();
+    if (auto it = std::ranges::find(m_searchFilter.lengths, length); it != m_searchFilter.lengths.end()) {
+        m_searchFilter.lengths.erase(it);
+    }
+    else {
+        m_searchFilter.lengths.push_back(length);
+    }
+    updateLengths();
+}
+
+void SearchFilterPopup::onStar(CCObject* sender) {
+    m_searchFilter.star = !m_searchFilter.star;
+    updateButton(static_cast<CCMenuItemSpriteExtra*>(sender), m_searchFilter.star, true);
+}
+
+void SearchFilterPopup::onConfirm(CCObject* sender) {
+    m_searchCallback(std::move(m_searchFilter));
+    onClose(nullptr);
 }
 
 void SearchFilterPopup::updateTypes() {

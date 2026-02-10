@@ -49,36 +49,22 @@ bool SearchHistoryPopup::init(SearchHistoryCallback callback) {
     m_scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(m_scrollLayer);
 
-    m_prevButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_arrow_01_001.png", 1.0f, [this](auto) {
-        page(m_page - 1);
-    });
+    auto prevButtonSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
+    m_prevButton = CCMenuItemSpriteExtra::create(prevButtonSprite, this, menu_selector(SearchHistoryPopup::onPrevPage));
     m_prevButton->setPosition({ -34.5f, 145.0f });
     m_prevButton->setID("prev-button");
     m_buttonMenu->addChild(m_prevButton);
 
     auto nextButtonSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     nextButtonSprite->setFlipX(true);
-    m_nextButton = CCMenuItemExt::createSpriteExtra(nextButtonSprite, [this](auto) {
-        page(m_page + 1);
-    });
+    m_nextButton = CCMenuItemSpriteExtra::create(nextButtonSprite, this, menu_selector(SearchHistoryPopup::onNextPage));
     m_nextButton->setPosition({ 474.5f, 145.0f });
     m_nextButton->setID("next-button");
     m_buttonMenu->addChild(m_nextButton);
 
-    auto clearButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.6f, [this](auto) {
-        createQuickPopup(
-            "Clear History",
-            "Are you sure you want to clear your search history?",
-            "No",
-            "Yes",
-            [this](auto, bool btn2) {
-                if (btn2) {
-                    SearchHistory::history.clear();
-                    page(0);
-                }
-            }
-        );
-    });
+    auto clearSprite = CCSprite::createWithSpriteFrameName("GJ_deleteBtn_001.png");
+    clearSprite->setScale(0.6f);
+    auto clearButton = CCMenuItemSpriteExtra::create(clearSprite, this, menu_selector(SearchHistoryPopup::onClear));
     clearButton->setPosition({ 420.0f, 270.0f });
     clearButton->setID("clear-button");
     m_buttonMenu->addChild(clearButton);
@@ -103,13 +89,7 @@ bool SearchHistoryPopup::init(SearchHistoryCallback callback) {
     auto filterSprite = ButtonSprite::create(
         CCSprite::createWithSpriteFrameName("GJ_filterIcon_001.png"), 32, false, 32.0f, "GJ_button_01.png", 1.0f);
     filterSprite->setScale(0.7f);
-    m_filterButton = CCMenuItemExt::createSpriteExtra(filterSprite, [this, filterSprite](auto) {
-        SearchFilterPopup::create(m_searchFilter, [this, filterSprite](SearchHistoryObject filter) {
-            m_searchFilter = std::move(filter);
-            filterSprite->updateBGImage(m_searchFilter.empty() ? "GJ_button_01.png" : "GJ_button_02.png");
-            page(0);
-        })->show();
-    });
+    m_filterButton = CCMenuItemSpriteExtra::create(filterSprite, this, menu_selector(SearchHistoryPopup::onFilter));
     m_filterButton->setPosition({ 405.0f, 235.0f });
     m_filterButton->setID("filter-button");
     m_buttonMenu->addChild(m_filterButton);
@@ -117,6 +97,41 @@ bool SearchHistoryPopup::init(SearchHistoryCallback callback) {
     page(0);
 
     return true;
+}
+
+void SearchHistoryPopup::onPrevPage(CCObject* sender) {
+    page(m_page - 1);
+}
+
+void SearchHistoryPopup::onNextPage(CCObject* sender) {
+    page(m_page + 1);
+}
+
+void SearchHistoryPopup::onClear(CCObject* sender) {
+    FLAlertLayer::create(
+        this,
+        "Clear History",
+        "Are you sure you want to clear your search history?",
+        "No",
+        "Yes",
+        350.0f
+    )->show();
+}
+
+void SearchHistoryPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (btn2) {
+        SearchHistory::history.clear();
+        page(0);
+    }
+}
+
+void SearchHistoryPopup::onFilter(CCObject* sender) {
+    SearchFilterPopup::create(m_searchFilter, [this](SearchHistoryObject filter) {
+        m_searchFilter = std::move(filter);
+        static_cast<ButtonSprite*>(m_filterButton->getNormalImage())->updateBGImage(
+            m_searchFilter.empty() ? "GJ_button_01.png" : "GJ_button_02.png");
+        page(0);
+    })->show();
 }
 
 void SearchHistoryPopup::page(int p) {

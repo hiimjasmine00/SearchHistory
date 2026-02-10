@@ -29,6 +29,8 @@ bool SearchHistoryNode::init(
 
     m_index = index;
     m_count = count;
+    m_searchCallback = std::move(search);
+    m_removeCallback = std::move(remove);
 
     auto background = NineSlice::create(
         index % 10 == 0 ? "square-top.png"_spr :
@@ -89,28 +91,16 @@ bool SearchHistoryNode::init(
     buttonMenu->setID("button-menu");
     addChild(buttonMenu);
 
-    auto removeButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_deleteBtn_001.png", 0.5f, [
-        this, remove = std::move(remove)
-    ](auto) mutable {
-        createQuickPopup(
-            "Remove Search",
-            "Are you sure you want to remove this search history entry?",
-            "No",
-            "Yes",
-            [this, remove = std::move(remove)](auto, bool btn2) mutable {
-                if (btn2) remove();
-            }
-        );
-    });
+    auto removeSprite = CCSprite::createWithSpriteFrameName("GJ_deleteBtn_001.png");
+    removeSprite->setScale(0.5f);
+    auto removeButton = CCMenuItemSpriteExtra::create(removeSprite, this, menu_selector(SearchHistoryNode::onRemove));
     removeButton->setPosition({ 380.0f, 25.0f });
     removeButton->setID("remove-button");
     buttonMenu->addChild(removeButton);
 
-    auto searchButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_undoBtn_001.png", 0.6f, [
-        this, search = std::move(search)
-    ](auto) mutable {
-        search();
-    });
+    auto searchSprite = CCSprite::createWithSpriteFrameName("GJ_undoBtn_001.png");
+    searchSprite->setScale(0.6f);
+    auto searchButton = CCMenuItemSpriteExtra::create(searchSprite, this, menu_selector(SearchHistoryNode::onSearch));
     searchButton->setPosition({ 350.0f, 25.0f });
     searchButton->setID("search-button");
     buttonMenu->addChild(searchButton);
@@ -306,6 +296,25 @@ bool SearchHistoryNode::init(
     addChild(timeLabel);
 
     return true;
+}
+
+void SearchHistoryNode::onRemove(CCObject* sender) {
+    FLAlertLayer::create(
+        this,
+        "Remove Search",
+        "Are you sure you want to remove this search history entry?",
+        "No",
+        "Yes",
+        350.0f
+    )->show();
+}
+
+void SearchHistoryNode::onSearch(CCObject* sender) {
+    m_searchCallback();
+}
+
+void SearchHistoryNode::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (btn2) m_removeCallback();
 }
 
 void SearchHistoryNode::draw() {
