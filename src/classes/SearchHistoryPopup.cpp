@@ -80,9 +80,7 @@ bool SearchHistoryPopup::init(SearchHistoryCallback callback) {
     m_searchInput->setCommonFilter(CommonFilter::Any);
     m_searchInput->setTextAlign(TextInputAlign::Left);
     m_searchInput->setPosition({ 200.0f, 235.0f });
-    m_searchInput->setCallback([this](auto) {
-        page(0);
-    });
+    m_searchInput->setDelegate(this);
     m_searchInput->setID("search-input");
     m_mainLayer->addChild(m_searchInput);
 
@@ -132,6 +130,10 @@ void SearchHistoryPopup::onFilter(CCObject* sender) {
             m_searchFilter.empty() ? "GJ_button_01.png" : "GJ_button_02.png");
         page(0);
     })->show();
+}
+
+void SearchHistoryPopup::textChanged(CCTextInputNode* input) {
+    page(0);
 }
 
 void SearchHistoryPopup::page(int p) {
