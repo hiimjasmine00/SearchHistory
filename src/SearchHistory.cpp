@@ -47,7 +47,23 @@ bool SearchHistoryObject::operator==(const SearchHistoryObject& other) const {
 bool SearchHistoryObject::contains(const SearchHistoryObject& other) const {
     if (other.type > -1 && type != other.type) return false;
     if (!other.query.empty() && !string::toLower(query).contains(string::toLower(other.query))) return false;
-    if (type >= 2) return true;
+    if (type >= 2) {
+        if (!other.difficulties.empty() || !other.lengths.empty()) return false;
+        if (other.uncompleted) return false;
+        if (other.completed) return false;
+        if (other.featured) return false;
+        if (other.original) return false;
+        if (other.twoPlayer) return false;
+        if (other.coins) return false;
+        if (other.epic) return false;
+        if (other.legendary) return false;
+        if (other.mythic) return false;
+        if (other.song) return false;
+        if (other.noStar) return false;
+        if (other.star) return false;
+        if (other.demonFilter > 0) return false;
+        return true;
+    }
     for (auto diff : other.difficulties) {
         if (!std::ranges::contains(difficulties, diff)) return false;
     }
@@ -70,6 +86,20 @@ bool SearchHistoryObject::contains(const SearchHistoryObject& other) const {
             if (other.songID > 0 && songID != other.songID) return false;
         }
         if (other.noStar && !noStar) return false;
+    }
+    else {
+        if (!other.lengths.empty()) return false;
+        if (other.uncompleted) return false;
+        if (other.completed) return false;
+        if (other.featured) return false;
+        if (other.original) return false;
+        if (other.twoPlayer) return false;
+        if (other.coins) return false;
+        if (other.epic) return false;
+        if (other.legendary) return false;
+        if (other.mythic) return false;
+        if (other.song) return false;
+        if (other.noStar) return false;
     }
     if (other.demonFilter > 0 && demonFilter != other.demonFilter) return false;
     if (other.star && !star) return false;
