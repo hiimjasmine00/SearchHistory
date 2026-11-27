@@ -1,4 +1,5 @@
 #include "../classes/SearchHistoryPopup.hpp"
+#include <Geode/binding/CCTextInputNode.hpp>
 #include <Geode/binding/GameLevelManager.hpp>
 #include <Geode/modify/LevelSearchLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
@@ -60,6 +61,7 @@ class $modify(SHLevelSearchLayer, LevelSearchLayer) {
 
             if (object.type == 0 || object.type == 1) {
                 if (glm->getBoolForKey("star_filter") != object.star) toggleStar(nullptr);
+                if (object.type == 1 && glm->getBoolForKey("nostar_filter") != object.noStar) toggleNoStar(nullptr);
 
                 for (auto diff : object.difficulties) {
                     if (diff > -4 && diff < 6 && diff != 0) {

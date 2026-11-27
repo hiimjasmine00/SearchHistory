@@ -5,7 +5,7 @@
 
 typedef geode::Function<void(SearchHistoryObject)> SearchFilterCallback;
 
-class SearchFilterPopup : public geode::Popup, public TextInputDelegate, public DemonFilterDelegate {
+class SearchFilterPopup : public geode::Popup, public DemonFilterDelegate {
 protected:
     SearchHistoryObject m_searchFilter;
     SearchFilterCallback m_searchCallback;
@@ -28,7 +28,6 @@ protected:
     void onCustomSong(cocos2d::CCObject*);
     void onPrevSong(cocos2d::CCObject*);
     void onNextSong(cocos2d::CCObject*);
-    void textChanged(CCTextInputNode*) override;
     void onDemonFilter(cocos2d::CCObject*);
     void onDifficulty(cocos2d::CCObject*);
     void onSpecialDifficulty(cocos2d::CCObject*);

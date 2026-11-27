@@ -1,6 +1,6 @@
 #include "../SearchHistory.hpp"
-#include <cocos2d.h>
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
+#include <Geode/cocos/layers_scenes_transitions_nodes/CCLayer.h>
 
 typedef geode::Function<void()> SearchCallback;
 typedef geode::Function<void()> RemoveCallback;

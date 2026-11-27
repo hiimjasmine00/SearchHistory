@@ -1,4 +1,8 @@
 # Search History Changelog
+## v1.2.2 (2026-11-27)
+- Ported to Geometry Dash v2.209 / Geode SDK v6.0.0
+- Added support for the new "No Star" filter for level lists
+
 ## v1.2.1 (2026-02-14)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
 

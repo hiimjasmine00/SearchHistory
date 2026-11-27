@@ -2,7 +2,6 @@
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Popup.hpp>
-#include <Geode/utils/cocos.hpp>
 
 using namespace geode::prelude;
 
@@ -202,7 +201,7 @@ bool SearchHistoryNode::init(
             }
         }
 
-        if (object.difficulties.empty() && (type < 1 ? object.lengths.empty() : true) && !object.star) {
+        if (object.difficulties.empty() && (type >= 1 || object.lengths.empty()) && !object.star && (type != 1 || !object.noStar)) {
             auto noDifficultiesLabel = CCLabelBMFont::create(type < 1 ? "(No Difficulties/Lengths)" : "(No Difficulties)", "bigFont.fnt");
             noDifficultiesLabel->setAnchorPoint({ 0.0f, 0.5f });
             noDifficultiesLabel->setColor({ 127, 127, 127 });
@@ -252,6 +251,13 @@ bool SearchHistoryNode::init(
                 starSprite->setScale(0.35f);
                 starSprite->setID("star-sprite");
                 difficultiesNode->addChild(starSprite);
+            }
+
+            if (type == 1 && object.noStar) {
+                auto noStarSprite = CCSprite::createWithSpriteFrameName("GJ_noStarsIcon_001.png");
+                noStarSprite->setScale(0.35f);
+                noStarSprite->setID("no-star-sprite");
+                difficultiesNode->addChild(noStarSprite);
             }
 
             difficultiesNode->updateLayout();

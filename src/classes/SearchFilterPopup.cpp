@@ -157,8 +157,13 @@ bool SearchFilterPopup::init(const SearchHistoryObject& filter, SearchFilterCall
     m_songInput->setVisible(m_searchFilter.customSong);
     m_songInput->setEnabled(m_searchFilter.song);
     m_songInput->setCommonFilter(CommonFilter::Uint);
-    m_songInput->setTextAlign(TextInputAlign::Center);
-    m_songInput->setDelegate(this);
+    m_songInput->setAlignment(Label::Alignment::Center);
+    m_songInput->setCallback([this](const std::string& text) {
+        if (auto id = numFromString<int>(text)) {
+            m_searchFilter.songID = id.unwrap();
+        }
+        m_searchFilter.songID = std::max(m_searchFilter.songID, 0);
+    });
     if (m_searchFilter.song && m_searchFilter.customSong) {
         m_songInput->setString(m_searchFilter.songID > 0 ? fmt::to_string(m_searchFilter.songID) : "");
     }
@@ -324,13 +329,6 @@ void SearchFilterPopup::onNextSong(CCObject* sender) {
         m_songLabel->setString(LevelTools::getAudioTitle(m_searchFilter.songID - 1).c_str());
         m_songLabel->limitLabelWidth(170.0f, 0.6f, 0.0f);
     }
-}
-
-void SearchFilterPopup::textChanged(CCTextInputNode* input) {
-    if (auto id = numFromString<int>(input->getString())) {
-        m_searchFilter.songID = id.unwrap();
-    }
-    m_searchFilter.songID = std::max(m_searchFilter.songID, 0);
 }
 
 void SearchFilterPopup::onDemonFilter(CCObject* sender) {

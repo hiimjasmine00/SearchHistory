@@ -1,6 +1,7 @@
 #include "SearchHistory.hpp"
 #include <Geode/binding/GJSearchObject.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/loader/ModEvent.hpp>
 
 using namespace geode::prelude;
 
@@ -85,7 +86,6 @@ bool SearchHistoryObject::contains(const SearchHistoryObject& other) const {
             if (customSong != other.customSong) return false;
             if (other.songID > 0 && songID != other.songID) return false;
         }
-        if (other.noStar && !noStar) return false;
     }
     else {
         if (!other.lengths.empty()) return false;
@@ -99,10 +99,10 @@ bool SearchHistoryObject::contains(const SearchHistoryObject& other) const {
         if (other.legendary) return false;
         if (other.mythic) return false;
         if (other.song) return false;
-        if (other.noStar) return false;
     }
     if (other.demonFilter > 0 && demonFilter != other.demonFilter) return false;
     if (other.star && !star) return false;
+    if (other.noStar && !noStar) return false;
     return true;
 }
 

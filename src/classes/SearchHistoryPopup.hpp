@@ -6,7 +6,7 @@
 
 typedef geode::Function<void(int)> SearchHistoryCallback;
 
-class SearchHistoryPopup : public geode::Popup, public FLAlertLayerProtocol, public TextInputDelegate {
+class SearchHistoryPopup : public geode::Popup, public FLAlertLayerProtocol {
 protected:
     SearchHistoryObject m_searchFilter;
     geode::ScrollLayer* m_scrollLayer;
@@ -24,7 +24,6 @@ protected:
     void onClear(cocos2d::CCObject*);
     void FLAlert_Clicked(FLAlertLayer*, bool) override;
     void onFilter(cocos2d::CCObject*);
-    void textChanged(CCTextInputNode*) override;
 public:
     static SearchHistoryPopup* create(SearchHistoryCallback);
 
